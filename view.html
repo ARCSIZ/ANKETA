@@ -335,10 +335,23 @@ async function verdict(status){
 }
 $('mAccept').addEventListener('click', () => verdict('accepted'));
 $('mReject').addEventListener('click', () => verdict('rejected'));
+
+/* confirm() в Telegram WebView мёртв — двойное нажатие вместо него */
 $('mDelete').addEventListener('click', () => {
-  if (!confirm('Удалить эту заявку?')) return;
+  const b = $('mDelete');
+  if (b.dataset.armed !== '1'){
+    if (!b.dataset.orig) b.dataset.orig = b.innerHTML;
+    b.dataset.armed = '1';
+    b.innerHTML = '<i data-lucide="alert-triangle" class="w-4 h-4"></i> точно?';
+    refreshIcons();
+    setTimeout(() => { delete b.dataset.armed; b.innerHTML = b.dataset.orig; refreshIcons(); }, 3500);
+    return;
+  }
+  delete b.dataset.armed;
+  b.innerHTML = b.dataset.orig;
   subs = subs.filter(x => x.id !== currentId); save(SKEY, subs);
   closeModal(); renderList(); toast('Заявка удалена.');
+  refreshIcons();
 });
 
 refreshIcons();

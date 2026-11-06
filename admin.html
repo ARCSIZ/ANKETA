@@ -273,7 +273,42 @@ async function apiSend(chatId, text){
 const RKEY = 'mc_roles_v1', SKEY = 'mc_subs_v1';
 const load = (k,d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch(e){ return d; } };
 const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
-let roles = load(RKEY, null) || [];
+
+/* те же стартовые вакансии, что и на главной — панель сразу не пустая */
+const DEFAULT_ROLES = [
+  { id:'r1', name:'Хелпер', icon:'i-pick', color:'#7fdb4f', open:true,
+    desc:'Правая рука игроков: отвечает в чате, помогает новичкам освоиться и следит за настроением сервера.',
+    questions:[
+      { id:'q1', type:'text', text:'Твой ник в Minecraft и возраст?' },
+      { id:'q2', type:'long', text:'Расскажи о своём опыте помощи или модерации на других серверах.', min:24 },
+      { id:'q3', type:'choice', text:'Игрок в чате просит выдать ему вещи «по-быстрому». Твои действия?', options:['Выдам, если он играет давно','Вежливо откажу и объясню правила','Проигнорирую','Сразу накажу мутом'] },
+      { id:'q4', type:'multi', text:'Что готов(а) делать на сервере?', options:['Отвечать в чате','Помогать новичкам','Следить за порядком','Придумывать ивенты'] }
+    ]},
+  { id:'r2', name:'Модератор', icon:'i-sword', color:'#f0503c', open:true,
+    desc:'Страж порядка: разбирает репорты, ловит читеров и решает конфликты быстро и честно.',
+    questions:[
+      { id:'q1', type:'text', text:'Твой ник в Minecraft и возраст?' },
+      { id:'q2', type:'long', text:'Опиши конфликтную ситуацию, которую ты разрешил(а), и чем всё закончилось.', min:24 },
+      { id:'q3', type:'choice', text:'Заметил(а) подозрительного игрока с читами. Первым делом:', options:['Сниму доказательства и доложу старшим','Сразу забаню','Спрослю об этом в общем чате','Напишу ему в личку'] },
+      { id:'q4', type:'text', text:'Сколько часов в неделю готов(а) уделять серверу?' }
+    ]},
+  { id:'r3', name:'Билдер', icon:'i-block', color:'#f6c453', open:true,
+    desc:'Архитектор мира: спавны, хабы, арены и декор — всё, что делает сервер красивым.',
+    questions:[
+      { id:'q1', type:'text', text:'Твой ник в Minecraft и возраст?' },
+      { id:'q2', type:'long', text:'Опиши свой стиль и лучшие постройки. Можно ссылки на скриншоты.', min:24 },
+      { id:'q3', type:'choice', text:'В каком стиле строишь чаще всего?', options:['Средневековье','Модерн','Фэнтези','Органика / терраформинг'] }
+    ]},
+  { id:'r4', name:'Ивент-менеджер', icon:'i-star', color:'#59e0e6', open:true,
+    desc:'Душа вечеринки: придумывает ивенты, пишет сценарии и превращает вечер пятницы в приключение.',
+    questions:[
+      { id:'q1', type:'text', text:'Твой ник в Minecraft и возраст?' },
+      { id:'q2', type:'long', text:'Придумай мини-ивент на 30 минут и опиши его сценарий по шагам.', min:24 },
+      { id:'q3', type:'multi', text:'Что умеешь?', options:['Писать сценарии','Строить арены','Вести трансляции','Монтировать видео'] }
+    ]}
+];
+let roles = load(RKEY, null);
+if (roles === null){ roles = JSON.parse(JSON.stringify(DEFAULT_ROLES)); save(RKEY, roles); }
 let editingId = null, qWork = [];
 
 const $ = id => document.getElementById(id);
@@ -284,6 +319,44 @@ function toast(msg, ok = true){
   t.innerHTML = '<span class="mono text-[11px] leading-snug text-[#e8eadf]">' + esc(msg) + '</span>';
   $('toasts').appendChild(t);
   setTimeout(() => { t.style.transition = 'opacity .4s'; t.style.opacity = 0; setTimeout(() => t.remove(), 420); }, 3200);
+}
+
+/* confirm() в Telegram WebView мёртв — делаем подтверждение двойным нажатием */
+function armConfirm(btn, onYes){
+  if (btn.dataset.armed === '1'){
+    clearTimeout(+btn.dataset.t || 0);
+    delete btn.dataset.armed; delete btn.dataset.t;
+    btn.innerHTML = btn.dataset.orig;
+    btn.classList.remove('!border-[#f0503c]','!text-[#f0503c]','!bg-[#2a1210]');
+    onYes(); refreshIcons();
+    return;
+  }
+  if (!btn.dataset.orig) btn.dataset.orig = btn.innerHTML;
+  btn.dataset.armed = '1';
+  btn.classList.add('!border-[#f0503c]','!text-[#f0503c]','!bg-[#2a1210]');
+  btn.innerHTML = '<i data-lucide="alert-triangle" class="w-4 h-4"></i> ТОЧНО?';
+  refreshIcons();
+  toast('Нажми ещё раз, чтобы подтвердить.');
+  btn.dataset.t = String(setTimeout(() => {
+    delete btn.dataset.armed; delete btn.dataset.t;
+    btn.innerHTML = btn.dataset.orig;
+    btn.classList.remove('!border-[#f0503c]','!text-[#f0503c]','!bg-[#2a1210]');
+    refreshIcons();
+  }, 3500));
+}
+
+/* clipboard недоступен без HTTPS / в webview — с фолбэком */
+function copyText(t){
+  const fb = () => {
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch(e){}
+    ta.remove(); return ok;
+  };
+  if (navigator.clipboard && window.isSecureContext)
+    return navigator.clipboard.writeText(t).then(() => true).catch(fb);
+  return Promise.resolve(fb());
 }
 
 const COLORS = ['#7fdb4f','#3ddc84','#59e0e6','#f6c453','#f69b3c','#f0503c','#b48cf2','#f27ec2'];
@@ -307,20 +380,28 @@ $('gateBtn').addEventListener('click', () => {
     const ok = (TG_USER && String(TG_USER.id) === String(ENV.ADMIN_ID)) || (idIn && idIn === String(ENV.ADMIN_ID));
     if (!ok){ toast('Неверный Admin ID. Доступ запрещён.', false); return; }
     if (tokIn && tokIn !== ENV.BOT_TOKEN){ ENV.BOT_TOKEN = tokIn; saveEnv(); }
+    localStorage.setItem('mc_admin_ok', String(ENV.ADMIN_ID));   // сессия этого браузера
     unlock();
   } else {
     if (!idIn || !/^[0-9]{4,}$/.test(idIn)){ toast('Введи свой числовой Telegram ID (узнай у @userinfobot).', false); return; }
     ENV.ADMIN_ID = idIn;
     if (tokIn) ENV.BOT_TOKEN = tokIn;
-    saveEnv(); unlock();
+    saveEnv();
+    localStorage.setItem('mc_admin_ok', String(ENV.ADMIN_ID));
+    unlock();
     toast('ADMIN_ID сохранён. Теперь только ты открываешь панель.');
   }
 });
+['gateId','gateTok'].forEach(id => $(id).addEventListener('keydown', e => {
+  if (e.key === 'Enter') $('gateBtn').click();
+}));
 (function gateBoot(){
   const key = new URLSearchParams(location.search).get('key');
+  const session = localStorage.getItem('mc_admin_ok');
   if (ENV.ADMIN_ID !== '0' && (
       (TG_USER && String(TG_USER.id) === String(ENV.ADMIN_ID)) ||
-      (key && key === String(ENV.ADMIN_ID)))){ unlock(); return; }
+      (key && key === String(ENV.ADMIN_ID)) ||
+      (session && session === String(ENV.ADMIN_ID)))){ unlock(); return; }
   gateInfoMsg();
 })();
 
@@ -465,13 +546,12 @@ $('saveRole').addEventListener('click', () => {
   renderRolesList(); renderStats();
   toast('Вакансия «' + name + '» сохранена.');
 });
-$('delRole').addEventListener('click', () => {
-  if (!confirm('Удалить вакансию вместе с вопросами?')) return;
+$('delRole').addEventListener('click', () => armConfirm($('delRole'), () => {
   roles = roles.filter(r => r.id !== editingId);
   save(RKEY, roles); editingId = null;
   $('editor').classList.add('hidden'); $('editorEmpty').classList.remove('hidden');
   renderRolesList(); renderStats(); toast('Вакансия удалена.');
-});
+}));
 
 /* ============ бот ============ */
 const BOT_SNIPPET = `# bot.py — приветствие + кнопка мини-аппа (aiogram 3, Python 3.11+)
@@ -539,22 +619,27 @@ $('envTest').addEventListener('click', async () => {
   } catch(e){ toast('Сеть недоступна: ' + e.message, false); }
 });
 $('copyBot').addEventListener('click', () => {
-  navigator.clipboard.writeText(BOT_SNIPPET).then(() => toast('Код бота скопирован.'));
+  copyText(BOT_SNIPPET).then(ok =>
+    toast(ok ? 'Код бота скопирован.' : 'Не удалось скопировать — выдели текст вручную.', !!ok));
 });
 $('expJson').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify({ roles, subs: load(SKEY, []) }, null, 2)], { type:'application/json' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = 'craft-team-backup.json'; a.click();
+  a.href = URL.createObjectURL(blob); a.download = 'craft-team-backup.json';
+  document.body.appendChild(a); a.click(); a.remove();
   toast('Бэкап скачан.');
 });
-$('seedBtn').addEventListener('click', () => {
-  if (!confirm('Вернуть стандартные 4 вакансии? Твои правки сотрутся.')) return;
-  localStorage.removeItem(RKEY); location.reload();
-});
-$('clearSubs').addEventListener('click', () => {
-  if (!confirm('Удалить ВСЕ заявки безвозвратно?')) return;
+$('seedBtn').addEventListener('click', () => armConfirm($('seedBtn'), () => {
+  roles = JSON.parse(JSON.stringify(DEFAULT_ROLES));
+  save(RKEY, roles);
+  editingId = null;
+  $('editor').classList.add('hidden'); $('editorEmpty').classList.remove('hidden');
+  renderRolesList(); renderStats();
+  toast('Стандартные 4 вакансии восстановлены.');
+}));
+$('clearSubs').addEventListener('click', () => armConfirm($('clearSubs'), () => {
   save(SKEY, []); renderStats(); toast('Заявки очищены.');
-});
+}));
 
 function init(){
   renderStats(); renderRolesList(); initBotPane(); refreshIcons();
