@@ -124,9 +124,7 @@
     <span class="pf text-[10px] md:text-xs leading-relaxed text-[#e8eadf]">CRAFT<br><span class="text-[#7fdb4f]">TEAM</span></span>
   </a>
   <nav class="flex items-center gap-2">
-    <span class="mono hidden md:inline-block text-[10px] uppercase tracking-widest px-3 py-2 border-2 border-[#2c3324] text-[#7fdb4f] bg-[#12150d]">Анкета</span>
-    <a href="view.html" class="mono hidden md:inline-block text-[10px] uppercase tracking-widest px-3 py-2 border-2 border-[#2c3324] text-[#98a28c] bg-[#12150d] hover:text-[#e8eadf] hover:border-[#4a5a38] transition-colors">Заявки</a>
-    <a href="admin.html" class="mono hidden md:inline-block text-[10px] uppercase tracking-widest px-3 py-2 border-2 border-[#2c3324] text-[#98a28c] bg-[#12150d] hover:text-[#e8eadf] hover:border-[#4a5a38] transition-colors">Админка</a>
+    <div id="adminNav" class="flex items-center gap-2"></div>
     <div id="userChip" class="flex items-center gap-2.5 pl-1"></div>
   </nav>
 </header>
@@ -290,6 +288,21 @@ function toast(msg, ok = true){
   setTimeout(() => { t.style.transition = 'opacity .4s, transform .4s'; t.style.opacity = 0; t.style.transform = 'translateY(8px)'; setTimeout(() => t.remove(), 420); }, 3400);
 }
 
+/* ---------------- доступ администратора ---------------- */
+const URL_KEY = new URLSearchParams(location.search).get('key');
+const IS_ADMIN = ENV.ADMIN_ID !== '0' && (
+  String(ME.id) === String(ENV.ADMIN_ID) || (URL_KEY && URL_KEY === String(ENV.ADMIN_ID))
+);
+(function renderAdminNav(){
+  if (!IS_ADMIN) return;
+  const suffix = (!TG_USER && URL_KEY) ? '?key=' + encodeURIComponent(URL_KEY) : '';
+  document.getElementById('adminNav').innerHTML =
+    '<a href="view.html' + suffix + '" class="pbtn inline-flex items-center gap-2 px-3.5 py-2.5 bg-[#1a2012] text-[#f6c453] mono text-[10px] uppercase tracking-widest">' +
+      '<i data-lucide="users" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">заявки</span></a>' +
+    '<a href="admin.html' + suffix + '" class="pbtn inline-flex items-center gap-2 px-3.5 py-2.5 bg-[#1a2012] text-[#7fdb4f] mono text-[10px] uppercase tracking-widest">' +
+      '<i data-lucide="shield" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">админка</span></a>';
+})();
+
 /* ---------------- чип пользователя ---------------- */
 (function renderUser(){
   const hue = (ME.id * 47) % 360;
@@ -322,12 +335,78 @@ function renderRoles(){
 }
 
 /* ---------------- тест ---------------- */
-const state = { role:null, idx:0, answers:{}, busy:false };
+const state = { role:null, idx:0, answers:{}, photos:[], busy:false };
+const MAX_PHOTOS = 3;
+const totalSteps = () => state.role.questions.length + 1;   // + шаг со скриншотами
+const isPhotoStep = () => state.idx === state.role.questions.length;
+
+/* сжимаем картинку до 1280px / JPEG, чтобы влезала в хранилище и в Telegram */
+function compressImage(file){
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 1280;
+        const sc = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.round(img.width * sc), h = Math.round(img.height * sc);
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(cv.toDataURL('image/jpeg', 0.72));
+      };
+      img.onerror = reject;
+      img.src = fr.result;
+    };
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+
+async function apiPhoto(chatId, dataUrl, caption){
+  const blob = await (await fetch(dataUrl)).blob();
+  const fd = new FormData();
+  fd.append('chat_id', chatId);
+  fd.append('photo', blob, 'screenshot.jpg');
+  if (caption) fd.append('caption', caption);
+  const r = await fetch('https://api.telegram.org/bot' + ENV.BOT_TOKEN + '/sendPhoto', { method:'POST', body: fd });
+  return r.json();
+}
+
+function renderPhotoGrid(){
+  const grid = $('photoGrid'); if (!grid) return;
+  grid.innerHTML = state.photos.map((p, i) =>
+    '<div class="relative group">' +
+      '<img src="' + p + '" class="w-full h-24 object-cover border-2 border-[#2c3324]" />' +
+      '<button class="pbtn absolute top-1.5 right-1.5 w-7 h-7 inline-flex items-center justify-center bg-[#2a1210] text-[#f0503c]" data-rm="' + i + '">' +
+        '<i data-lucide="x" class="w-3.5 h-3.5"></i></button>' +
+    '</div>'
+  ).join('');
+  const zone = $('photoDrop');
+  if (zone) zone.classList.toggle('hidden', state.photos.length >= MAX_PHOTOS);
+  const cnt = $('photoCount');
+  if (cnt) cnt.textContent = state.photos.length + ' / ' + MAX_PHOTOS;
+  refreshIcons();
+  grid.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => {
+    state.photos.splice(+b.dataset.rm, 1); renderPhotoGrid();
+  }));
+}
+
+async function handleFiles(files){
+  for (const f of Array.from(files)){
+    if (state.photos.length >= MAX_PHOTOS){ toast('Можно прикрепить не больше ' + MAX_PHOTOS + ' изображений.', false); break; }
+    if (!f.type.startsWith('image/')){ toast('«' + f.name + '» — не изображение.', false); continue; }
+    if (f.size > 12 * 1024 * 1024){ toast('Файл больше 12 МБ, выбери полегче.', false); continue; }
+    try { state.photos.push(await compressImage(f)); }
+    catch(e){ toast('Не удалось прочитать файл.', false); }
+  }
+  renderPhotoGrid();
+}
 
 function startTest(roleId){
   const role = roles.find(r => r.id === roleId);
   if (!role) return;
-  state.role = role; state.idx = 0; state.answers = {}; state.busy = false;
+  state.role = role; state.idx = 0; state.answers = {}; state.photos = []; state.busy = false;
   $('tRoleName').textContent = role.name.toUpperCase();
   $('tRoleName').style.color = role.color;
   $('tIcon').style.background = role.color + '22';
@@ -340,17 +419,41 @@ function startTest(roleId){
 function closeTest(){ $('testOverlay').classList.add('translate-y-full','opacity-0'); }
 
 function renderProgress(){
-  const n = state.role.questions.length;
+  const n = totalSteps();
   $('tProgress').innerHTML = Array.from({length:n}, (_, i) =>
     '<span class="seg ' + (i <= state.idx ? 'on' : '') + '" style="--acc:' + state.role.color + '"></span>').join('');
 }
 
+function renderPhotoStep(){
+  const acc = state.role.color;
+  const card = $('qCard');
+  card.classList.remove('rise'); void card.offsetWidth; card.classList.add('rise');
+  $('qCounter').textContent = 'шаг ' + (state.idx + 1) + ' / ' + totalSteps();
+  $('qText').textContent = 'Прикрепи скриншоты своих работ или профиля';
+  $('qNextLabel').textContent = 'ОТПРАВИТЬ';
+  $('qHint').innerHTML = 'до ' + MAX_PHOTOS + ' изображений · необязательно · прикреплено: <span id="photoCount">0 / ' + MAX_PHOTOS + '</span>';
+  $('qInput').innerHTML =
+    '<label id="photoDrop" class="px-card flex flex-col items-center justify-center gap-3 p-8 cursor-pointer text-center" style="border-color:' + acc + '44">' +
+      '<input type="file" id="photoInput" accept="image/*" multiple class="hidden" />' +
+      '<span class="pbtn inline-flex items-center justify-center w-12 h-12" style="background:' + acc + '22;border-color:' + acc + '55">' +
+        '<i data-lucide="image-plus" class="w-6 h-6" style="color:' + acc + '"></i></span>' +
+      '<span class="mono text-[11px] uppercase tracking-widest text-[#98a28c]">выбрать изображения</span>' +
+      '<span class="mono text-[9px] text-[#5f6b54]">png / jpg, до 12 МБ каждое</span>' +
+    '</label>' +
+    '<div id="photoGrid" class="grid grid-cols-3 gap-3 mt-4"></div>';
+  refreshIcons();
+  renderPhotoGrid();
+  const inp = $('photoInput');
+  inp.addEventListener('change', () => { handleFiles(inp.files); inp.value = ''; });
+}
+
 function renderQuestion(){
+  if (isPhotoStep()) return renderPhotoStep();
   const q = state.role.questions[state.idx];
   const acc = state.role.color;
   $('qCounter').textContent = 'вопрос ' + (state.idx + 1) + ' / ' + state.role.questions.length;
   $('qText').textContent = q.text;
-  $('qNextLabel').textContent = state.idx === state.role.questions.length - 1 ? 'ОТПРАВИТЬ' : 'ДАЛЕЕ';
+  $('qNextLabel').textContent = 'ДАЛЕЕ';
   $('qBack').style.visibility = 'visible';
   const saved = state.answers[q.id];
   const card = $('qCard');
@@ -443,6 +546,7 @@ async function finish(){
       const a = state.answers[q.id];
       return { q: q.text, a: Array.isArray(a) ? a.join(', ') : String(a || '') };
     }),
+    photos: state.photos.slice(),
     status: 'new', delivered: false
   };
 
@@ -451,13 +555,26 @@ async function finish(){
     'Игрок: ' + esc(sub.userName) + (sub.username ? ' (@' + esc(sub.username) + ')' : '') + '\n' +
     'ID: <code>' + sub.userId + '</code>\n' +
     'Вакансия: <b>' + esc(sub.roleName) + '</b>\n' +
-    'Время: ' + esc(sub.dateStr) + '\n\n' + qaLines + '\n\n<i>Полный список заявок — в view.html панели.</i>';
+    'Время: ' + esc(sub.dateStr) + '\n' +
+    'Скриншотов: ' + sub.photos.length + '\n\n' + qaLines + '\n\n<i>Полный список заявок — в view.html панели.</i>';
 
   let ok = false;
   try { const res = await apiSend(ENV.ADMIN_ID, text); ok = !!(res && res.ok); if (!ok) console.warn('TG:', res); }
   catch(e){ console.warn(e); }
+
+  // скриншоты отдельными сообщениями следом за анкетой
+  for (let i = 0; i < sub.photos.length; i++){
+    try { await apiPhoto(ENV.ADMIN_ID, sub.photos[i], sub.userName + ' · ' + sub.roleName + ' · фото ' + (i + 1) + '/' + sub.photos.length); }
+    catch(e){ console.warn('photo', e); }
+  }
+
   sub.delivered = ok;
-  const subs = load(SKEY, []); subs.unshift(sub); save(SKEY, subs);
+  const subs = load(SKEY, []); subs.unshift(sub);
+  try { save(SKEY, subs); }
+  catch(e){   // переполнение localStorage — сохраняем заявку без тяжёлых картинок
+    subs[0] = Object.assign({}, sub, { photos: [], photosDropped: sub.photos.length });
+    try { save(SKEY, subs); } catch(e2){ save(SKEY, [subs[0]]); }
+  }
 
   $('qWrap').classList.add('hidden');
   $('doneWrap').classList.remove('hidden');
@@ -471,13 +588,13 @@ async function finish(){
 
 /* ---------------- события ---------------- */
 $('qNext').addEventListener('click', () => {
+  if (isPhotoStep()){ finish(); return; }
   collectCurrent();
   if (!validateCurrent()) return;
-  if (state.idx < state.role.questions.length - 1){ state.idx++; renderProgress(); renderQuestion(); }
-  else finish();
+  state.idx++; renderProgress(); renderQuestion();
 });
 $('qBack').addEventListener('click', () => {
-  collectCurrent();
+  if (!isPhotoStep()) collectCurrent();
   if (state.idx > 0){ state.idx--; renderProgress(); renderQuestion(); }
   else closeTest();
 });

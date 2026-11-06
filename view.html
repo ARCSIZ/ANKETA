@@ -140,6 +140,12 @@
   </div>
 </div>
 
+<!-- лайтбокс для скриншотов -->
+<div id="lightbox" class="fixed inset-0 z-[85] bg-[#060805]/95 opacity-0 pointer-events-none flex items-center justify-center p-5 transition-opacity duration-200 cursor-zoom-out">
+  <img id="lightboxImg" class="max-w-full max-h-[90vh] border-2 border-[#2c3324]" />
+  <button class="pbtn absolute top-5 right-5 w-10 h-10 inline-flex items-center justify-center bg-[#1a2012] text-[#98a28c]"><i data-lucide="x" class="w-5 h-5"></i></button>
+</div>
+
 <div id="toasts" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[95] flex flex-col items-center gap-2 pointer-events-none w-[92vw] max-w-md"></div>
 
 <script>
@@ -274,13 +280,28 @@ function openModal(id){
   $('mMeta').textContent = (s.username ? '@' + s.username + ' · ' : '') + 'id ' + s.userId + ' · ' + s.dateStr;
   $('mBadge').innerHTML = '<span class="mono text-[10px] uppercase tracking-widest px-3 py-1.5 border-2 mr-2" style="color:' + c + ';border-color:' + c + '55">' + esc(s.roleName) + '</span>' +
     '<span class="mono text-[10px] uppercase tracking-widest px-3 py-1.5 border-2 st-' + s.status + '">' + STATUS_LABEL[s.status] + '</span>';
+  const photos = Array.isArray(s.photos) ? s.photos : [];
+  const photoBlock = photos.length
+    ? '<div class="px-card !shadow-none p-4 md:p-5">' +
+        '<p class="mono text-[9px] uppercase tracking-widest text-[#5f6b54]">скриншоты (' + photos.length + ')</p>' +
+        '<div class="grid grid-cols-3 gap-3 mt-3">' +
+          photos.map((p, i) => '<img src="' + p + '" data-zoom="' + i + '" class="w-full h-24 object-cover border-2 border-[#2c3324] cursor-zoom-in hover:border-[#7fdb4f] transition-colors" />').join('') +
+        '</div></div>'
+    : (s.photosDropped
+        ? '<p class="mono text-[10px] text-[#5f6b54]">' + s.photosDropped + ' изображ. не сохранились локально — смотри их в Telegram</p>'
+        : '');
   $('mAnswers').innerHTML = s.answers.map((a, i) =>
     '<div class="px-card !shadow-none p-4 md:p-5">' +
       '<p class="mono text-[9px] uppercase tracking-widest text-[#5f6b54]">вопрос ' + (i + 1) + '</p>' +
       '<p class="text-[13.5px] font-medium mt-2 leading-snug">' + esc(a.q) + '</p>' +
       '<p class="mt-3 text-[13px] leading-relaxed text-[#b9c6a8] whitespace-pre-wrap border-l-2 pl-3.5" style="border-color:' + c + '66">' + esc(a.a) + '</p>' +
     '</div>'
-  ).join('');
+  ).join('') + photoBlock;
+  $('mAnswers').querySelectorAll('[data-zoom]').forEach(img => img.addEventListener('click', () => {
+    const lb = $('lightbox');
+    $('lightboxImg').src = photos[+img.dataset.zoom];
+    lb.classList.remove('opacity-0','pointer-events-none');
+  }));
   $('modal').classList.remove('opacity-0','pointer-events-none');
   $('modalBox').classList.remove('translate-y-8');
   refreshIcons();
@@ -291,6 +312,9 @@ function closeModal(){
   currentId = null;
 }
 $('mClose').addEventListener('click', closeModal);
+$('lightbox').addEventListener('click', () => {
+  $('lightbox').classList.add('opacity-0','pointer-events-none');
+});
 $('modal').addEventListener('click', e => { if (e.target === $('modal')) closeModal(); });
 
 async function verdict(status){
