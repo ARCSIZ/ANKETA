@@ -17,6 +17,8 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 PORT = int(os.getenv("PORT", "3594"))
 ADMIN_ID = str(os.getenv("ADMIN_ID", "")).strip()
 BOT_TOKEN = str(os.getenv("BOT_TOKEN", "")).strip()
+# id группы стаффа (бот должен быть там админом с правом «Пригласительные ссылки»)
+STAFF_CHAT_ID = str(os.getenv("STAFF_CHAT_ID", "")).strip()
 
 DATA_DIR = os.path.join(ROOT, "data")
 STORE = os.path.join(DATA_DIR, "store.json")
@@ -177,6 +179,29 @@ async def api_submit(request):
     return web.json_response({"ok": True, "delivered": bool(res.get("ok")), "id": sub["id"]})
 
 
+async def make_invite(sub):
+    """Одноразовая ссылка в группу стаффа: лимит 1 человек, живёт 7 дней."""
+    if not STAFF_CHAT_ID:
+        return None, "STAFF_CHAT_ID не задан"
+    r = await tg("createChatInviteLink", {
+        "chat_id": STAFF_CHAT_ID,
+        "name": f"{sub.get('userName', '')} · {sub.get('roleName', '')}"[:32],
+        "member_limit": 1,
+        "expire_date": int(time.time()) + 7 * 24 * 3600,
+        "creates_join_request": False,
+    })
+    if r.get("ok"):
+        return r["result"]["invite_link"], None
+    return None, r.get("description", "ошибка Bot API")
+
+
+async def revoke_invite(link):
+    if not (link and STAFF_CHAT_ID):
+        return False
+    r = await tg("revokeChatInviteLink", {"chat_id": STAFF_CHAT_ID, "invite_link": link})
+    return bool(r.get("ok"))
+
+
 async def api_sub_update(request):
     if not is_admin(request):
         return web.json_response({"ok": False, "error": "forbidden"}, status=403)
@@ -185,6 +210,20 @@ async def api_sub_update(request):
     action = body.get("action")
     notify = bool(body.get("notify"))
 
+    data = read_store()
+    target = next((s for s in data["subs"] if int(s.get("id", 0)) == sid), None)
+    old_link = (target or {}).get("inviteLink")
+
+    invite, invite_err, revoked = None, None, False
+
+    # приняли — выдаём свежую одноразовую ссылку
+    if action == "accepted" and target:
+        invite, invite_err = await make_invite(target)
+
+    # отклонили или удалили — отзываем выданную ранее
+    if action in ("rejected", "delete") and old_link:
+        revoked = await revoke_invite(old_link)
+
     async with _lock:
         data = read_store()
         target = next((s for s in data["subs"] if int(s.get("id", 0)) == sid), None)
@@ -192,21 +231,44 @@ async def api_sub_update(request):
             data["subs"] = [s for s in data["subs"] if int(s.get("id", 0)) != sid]
         elif target:
             target["status"] = action
+            if action == "accepted" and invite:
+                target["inviteLink"] = invite
+                target["inviteRevoked"] = False
+            if action == "rejected":
+                target["inviteRevoked"] = bool(revoked or not old_link)
+                target.pop("inviteLink", None)
         write_store(data)
 
     delivered = False
     if notify and target and action in ("accepted", "rejected") and target.get("userId"):
-        txt = (
-            f"<b>CRAFT TEAM</b>\nТвоя заявка на вакансию «{target.get('roleName')}» — <b>принята</b>. "
-            "Администратор скоро напишет тебе лично. Добро пожаловать в команду!"
-            if action == "accepted" else
-            f"<b>CRAFT TEAM</b>\nЗаявка на вакансию «{target.get('roleName')}» отклонена. "
-            "Не расстраивайся — набери опыта и попробуй снова позже."
-        )
-        r = await tg("sendMessage", {"chat_id": target["userId"], "text": txt, "parse_mode": "HTML"})
+        if action == "accepted":
+            txt = (
+                f"<b>CRAFT TEAM</b>\nТвоя заявка на вакансию «{target.get('roleName')}» — <b>принята</b>!\n"
+                "Добро пожаловать в команду."
+            )
+            if invite:
+                txt += (
+                    "\n\nВот твоя персональная ссылка в чат стаффа — "
+                    "она одноразовая и действует 7 дней, никому её не передавай:\n"
+                    f"{invite}"
+                )
+            elif invite_err:
+                txt += "\n\nСсылку в чат стаффа администратор пришлёт отдельно."
+        else:
+            txt = (
+                f"<b>CRAFT TEAM</b>\nЗаявка на вакансию «{target.get('roleName')}» отклонена. "
+                "Не расстраивайся — набери опыта и попробуй снова позже."
+            )
+        r = await tg("sendMessage", {
+            "chat_id": target["userId"], "text": txt,
+            "parse_mode": "HTML", "disable_web_page_preview": True,
+        })
         delivered = bool(r.get("ok"))
 
-    return web.json_response({"ok": True, "delivered": delivered})
+    return web.json_response({
+        "ok": True, "delivered": delivered,
+        "invite": invite, "inviteError": invite_err, "revoked": revoked,
+    })
 
 
 async def api_test(request):
@@ -231,7 +293,8 @@ async def health(_r):
 
 async def env_js(_r):
     # В браузер уходит ТОЛЬКО admin_id — токен остаётся на сервере
-    body = "window.__ENV__ = " + json.dumps({"ADMIN_ID": ADMIN_ID}, ensure_ascii=False) + ";"
+    payload = {"ADMIN_ID": ADMIN_ID, "STAFF_READY": bool(STAFF_CHAT_ID)}
+    body = "window.__ENV__ = " + json.dumps(payload, ensure_ascii=False) + ";"
     return web.Response(text=body, content_type="application/javascript")
 
 

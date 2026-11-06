@@ -162,6 +162,7 @@
         <div class="px-card !shadow-none p-4 mt-5 mono text-[11px]">
           <div class="flex justify-between gap-3"><span class="text-[#5f6b54]">ADMIN_ID</span><span id="envIdView" class="text-[#7fdb4f]"></span></div>
           <div class="flex justify-between gap-3 mt-2"><span class="text-[#5f6b54]">BOT_TOKEN</span><span class="text-[#98a28c]">скрыт на сервере</span></div>
+          <div class="flex justify-between gap-3 mt-2"><span class="text-[#5f6b54]">STAFF_CHAT_ID</span><span id="envStaffView" class="text-[#98a28c]"></span></div>
           <div class="flex justify-between gap-3 mt-2"><span class="text-[#5f6b54]">хранилище</span><span class="text-[#98a28c]">data/store.json</span></div>
         </div>
         <button id="envTest" class="pbtn mt-6 px-5 py-3.5 bg-[#1a2012] text-[#59e0e6] mono text-[10px] uppercase tracking-widest inline-flex items-center gap-2">
@@ -542,6 +543,10 @@ asyncio.run(main())`;
 
 function initBotPane(){
   $('envIdView').textContent = ADMIN_ID || 'не задан';
+  const staff = !!(window.__ENV__ && window.__ENV__.STAFF_READY);
+  const se = $('envStaffView');
+  se.textContent = staff ? 'задан — ссылки выдаются' : 'не задан — /id в группе';
+  se.className = staff ? 'text-[#7fdb4f]' : 'text-[#f6c453]';
   $('botCode').textContent = BOT_SNIPPET;
 }
 icons();

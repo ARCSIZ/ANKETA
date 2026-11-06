@@ -8,8 +8,8 @@ import asyncio
 import os
 
 from dotenv import load_dotenv
-from aiogram import Bot, Dispatcher
-from aiogram.filters import CommandStart
+from aiogram import Bot, Dispatcher, F
+from aiogram.filters import CommandStart, Command
 from aiogram.types import (
     Message,
     InlineKeyboardMarkup,
@@ -50,9 +50,21 @@ async def start(m: Message):
     )
 
 
-@dp.message()
+@dp.message(Command("id"))
+async def chat_id(m: Message):
+    """/id в группе стаффа — покажет её ID для переменной STAFF_CHAT_ID."""
+    kind = "группа" if m.chat.type in ("group", "supergroup") else "личный чат"
+    await m.answer(
+        f"Тип: {kind}\nID чата: <code>{m.chat.id}</code>\n\n"
+        "Впиши это значение в переменную <b>STAFF_CHAT_ID</b> в панели Bothost "
+        "и дай боту право «Пригласительные ссылки».",
+        parse_mode="HTML",
+    )
+
+
+@dp.message(F.chat.type == "private")
 async def fallback(m: Message):
-    """Любое другое сообщение — мягко возвращаем к анкете."""
+    """Личка: любое другое сообщение — мягко возвращаем к анкете."""
     await m.answer("Чтобы подать заявку, напиши /start и нажми кнопку анкеты.")
 
 

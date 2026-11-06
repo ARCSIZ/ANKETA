@@ -130,7 +130,7 @@
     <div id="mAnswers" class="mt-6 flex flex-col gap-4"></div>
     <label class="mt-7 flex items-center gap-2.5 cursor-pointer select-none">
       <input type="checkbox" id="mNotify" class="accent-[#7fdb4f] w-4 h-4" checked />
-      <span class="mono text-[10px] uppercase tracking-widest text-[#98a28c]">уведомить игрока в Telegram о решении</span>
+      <span class="mono text-[10px] uppercase tracking-widest text-[#98a28c]">уведомить игрока + выслать ссылку в чат стаффа</span>
     </label>
     <div class="flex flex-wrap gap-3 mt-5">
       <button id="mAccept" class="pbtn px-6 py-3.5 bg-[#7fdb4f] text-[#0c0e0a] pf text-[9px] inline-flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> ПРИНЯТЬ</button>
@@ -287,7 +287,16 @@ function openModal(id){
   $('mName').textContent = s.userName;
   $('mMeta').textContent = (s.username ? '@' + s.username + ' · ' : '') + 'id ' + s.userId + ' · ' + s.dateStr;
   $('mBadge').innerHTML = '<span class="mono text-[10px] uppercase tracking-widest px-3 py-1.5 border-2 mr-2" style="color:' + c + ';border-color:' + c + '55">' + esc(s.roleName) + '</span>' +
-    '<span class="mono text-[10px] uppercase tracking-widest px-3 py-1.5 border-2 st-' + s.status + '">' + STATUS_LABEL[s.status] + '</span>';
+    '<span class="mono text-[10px] uppercase tracking-widest px-3 py-1.5 border-2 st-' + s.status + '">' + STATUS_LABEL[s.status] + '</span>' +
+    (s.inviteLink
+      ? '<div class="px-card !shadow-none p-3.5 mt-4 flex items-center gap-3">' +
+          '<i data-lucide="link" class="w-4 h-4 text-[#7fdb4f] shrink-0"></i>' +
+          '<a href="' + esc(s.inviteLink) + '" target="_blank" class="mono text-[10px] text-[#59e0e6] truncate flex-1 hover:underline">' + esc(s.inviteLink) + '</a>' +
+          '<span class="mono text-[9px] uppercase tracking-widest text-[#5f6b54] shrink-0">одноразовая</span>' +
+        '</div>'
+      : (s.inviteRevoked
+          ? '<p class="mono text-[10px] text-[#f0503c] mt-4 flex items-center gap-2"><i data-lucide="link-2-off" class="w-3.5 h-3.5"></i> ссылка отозвана</p>'
+          : ''));
   const photos = Array.isArray(s.photos) ? s.photos : [];
   const photoBlock = photos.length
     ? '<div class="px-card !shadow-none p-4 md:p-5">' +
@@ -332,6 +341,14 @@ async function verdict(status){
   try {
     const res = await apiPost('/api/subs/' + s.id, { action: status, notify });
     s.status = status;
+    if (status === 'accepted'){
+      if (res.invite){ s.inviteLink = res.invite; msg += ' Одноразовая ссылка в чат стаффа создана'; msg += notify && res.delivered ? ' и отправлена игроку.' : '.'; }
+      else if (res.inviteError){ msg += ' Ссылку создать не вышло: ' + res.inviteError; }
+    }
+    if (status === 'rejected'){
+      delete s.inviteLink;
+      if (res.revoked) msg += ' Выданная ссылка отозвана.';
+    }
     if (notify) msg += res.delivered ? ' Игрок уведомлён в ЛС.' : ' Написать игроку не вышло (он не запускал бота).';
   } catch(e){ toast('Ошибка сервера: ' + e.message, false); return; }
   closeModal(); renderList(); toast(msg, true);
