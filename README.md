@@ -7,7 +7,7 @@
 ## Стек
 
 - **Язык:** Python **3.12** (см. `bothost.json`, минимум 3.11)
-- **Порт:** `8000` — берётся из переменной `PORT`, должен совпадать с полем
+- **Порт:** `3594` — берётся из переменной `PORT`, должен совпадать с полем
   «Порт» в панели Bothost
 - **Веб-сервер + бот в одном процессе:** `aiohttp` (статика, `/health`,
   `/api/env.js`) + `aiogram 3` (long polling)
@@ -30,7 +30,7 @@
 ```bash
 pip install -r requirements.txt
 cp .env.example .env   # впиши BOT_TOKEN, ADMIN_ID, WEBAPP_URL
-python main.py         # сайт: http://localhost:8000 + бот
+python main.py         # сайт: http://localhost:3594 + бот
 ```
 
 Отдельно только бота можно поднять так: `python bot.py`.
@@ -46,7 +46,7 @@ python main.py         # сайт: http://localhost:8000 + бот
    |--------------|------------------------------------------------------------------|
    | `BOT_TOKEN`  | токен от @BotFather                                              |
    | `ADMIN_ID`   | твой числовой Telegram ID (@userinfobot)                         |
-   | `PORT`       | `8000` — **должно совпадать с полем «Порт»** в панели            |
+   | `PORT`       | `3594` — **должно совпадать с полем «Порт»** в панели            |
    | `WEBAPP_URL` | заполнить после шага 3                                           |
 
 3. Включи **«Использовать домен»** → Bothost выдаст

@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-PORT = int(os.getenv("PORT", "8000"))
+PORT = int(os.getenv("PORT", "3594"))
 ADMIN_ID = os.getenv("ADMIN_ID", "")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 

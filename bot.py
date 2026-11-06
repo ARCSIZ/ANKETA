@@ -23,7 +23,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 # Bothost: после включения «Использовать домен» впиши сюда выданный https://<id>.bothost.tech
 WEBAPP_URL = (
-    os.getenv("WEBAPP_URL") or os.getenv("PUBLIC_URL") or "http://localhost:8000/"
+    os.getenv("WEBAPP_URL") or os.getenv("PUBLIC_URL") or "http://localhost:3594/"
 ).rstrip("/") + "/"
 
 bot = Bot(BOT_TOKEN) if BOT_TOKEN else None
