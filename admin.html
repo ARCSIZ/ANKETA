@@ -8,6 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%236fbf3f'/%3E%3Crect y='5' width='16' height='11' fill='%238a5a2b'/%3E%3C/svg%3E" />
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="/api/env.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -233,7 +234,7 @@
       <ol class="mt-6 flex flex-col gap-3 text-[13px] text-[#98a28c] leading-relaxed list-decimal list-inside">
         <li><span class="text-[#e8eadf]">@BotFather</span> → /newbot → забери токен и впиши его слева.</li>
         <li>Кнопку меню мини-аппа задай через <span class="mono text-[11px] text-[#e8eadf]">/setmenubutton</span> в BotFather или методом <span class="mono text-[11px] text-[#e8eadf]">setChatMenuButton</span>, ссылка — на index.html.</li>
-        <li>Запусти: <span class="mono text-[11px] text-[#e8eadf]">pip install -r requirements.txt</span>, затем <span class="mono text-[11px] text-[#e8eadf]">python bot.py</span> (читает BOT_TOKEN и WEBAPP_URL из .env)</li>
+        <li>Деплой на Bothost: в корне уже лежит <span class="mono text-[11px] text-[#e8eadf]">bothost.json</span> (точка входа main.py). Включи <span class="mono text-[11px] text-[#e8eadf]">«Использовать домен»</span> — выдадут https://&lt;id&gt;.bothost.tech — и впиши его в WEBAPP_URL в панели, затем <span class="text-[#e8eadf]">пересобери</span>. Проверка: <span class="mono text-[11px] text-[#e8eadf]">https://домен/health</span></li>
         <li>Бот сам поприветствует игрока на /start, даст ссылку на мини-апп, а анкеты и статусы уже летят через Bot API прямо с этих страниц.</li>
       </ol>
     </div>
@@ -474,22 +475,19 @@ $('delRole').addEventListener('click', () => {
 
 /* ============ бот ============ */
 const BOT_SNIPPET = `# bot.py — приветствие + кнопка мини-аппа (aiogram 3, Python 3.11+)
-# весь этот код уже лежит в файле bot.py проекта
-import asyncio
-import os
+# этот же код лежит в bot.py проекта; на Bothost его поднимает main.py
+import asyncio, os
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart
 from aiogram.types import (
-    Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo,
+    Message, InlineKeyboardMarkup, InlineKeyboardButton,
+    WebAppInfo, MenuButtonWebApp,
 )
 
 load_dotenv()
-
-BOT_TOKEN  = os.getenv("BOT_TOKEN", "")
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https://your-domain/")
-
-bot = Bot(BOT_TOKEN)
+WEBAPP_URL = (os.getenv("WEBAPP_URL") or "https://your-domain/").rstrip("/") + "/"
+bot = Bot(os.getenv("BOT_TOKEN"))
 dp  = Dispatcher()
 
 @dp.message(CommandStart())
@@ -509,12 +507,14 @@ async def start(m: Message):
     )
 
 async def main():
+    # кнопку меню чата бот ставит сам — BotFather трогать не нужно
+    await bot.set_chat_menu_button(
+        menu_button=MenuButtonWebApp(text="Анкета", web_app=WebAppInfo(url=WEBAPP_URL))
+    )
     await bot.delete_webhook(drop_pending_updates=True)
-    print("Craft Team bot запущен (polling)")
     await dp.start_polling(bot)
 
-if __name__ == "__main__":
-    asyncio.run(main())`;
+asyncio.run(main())`;
 
 function initBotPane(){
   $('envId').value = ENV.ADMIN_ID === '0' ? '' : ENV.ADMIN_ID;
