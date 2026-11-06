@@ -150,36 +150,28 @@
 
 <script>
 /* ============ ENV (читается так же, как на других страницах) ============ */
-const FALLBACK_ENV = { ADMIN_ID: "0", BOT_TOKEN: "PASTE_BOT_TOKEN" };
-function getEnv(){
-  let ls = {}; try { ls = JSON.parse(localStorage.getItem('mc_env') || '{}'); } catch(e){}
-  return {
-    ADMIN_ID:  (window.__ENV__ && window.__ENV__.ADMIN_ID)  || ls.ADMIN_ID  || FALLBACK_ENV.ADMIN_ID,
-    BOT_TOKEN: (window.__ENV__ && window.__ENV__.BOT_TOKEN) || ls.BOT_TOKEN || FALLBACK_ENV.BOT_TOKEN
-  };
-}
-const ENV = getEnv();
+const ENV = { ADMIN_ID: String((window.__ENV__ && window.__ENV__.ADMIN_ID) || '0') };
+let KEY = '';
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
 try { if (tg){ tg.ready(); tg.expand(); tg.setHeaderColor('#0c0e0a'); tg.setBackgroundColor('#0c0e0a'); } } catch(e){}
 const TG_USER = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
 
-async function apiSend(chatId, text){
-  const r = await fetch('https://api.telegram.org/bot' + ENV.BOT_TOKEN + '/sendMessage', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode:'HTML' })
+async function apiGet(p){
+  const r = await fetch(p + '?key=' + encodeURIComponent(KEY), { cache:'no-store' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+async function apiPost(p, body){
+  const r = await fetch(p + '?key=' + encodeURIComponent(KEY), {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body || {})
   });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
   return r.json();
 }
 
-/* ============ хранилище ============ */
-const RKEY = 'mc_roles_v1', SKEY = 'mc_subs_v1';
-const load = (k,d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch(e){ return d; } };
-const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
-let roles = load(RKEY, []);
-let subs  = load(SKEY, []);
-let currentId = null;
+let roles = [], subs = [], currentId = null;
 
 const $ = id => document.getElementById(id);
 const refreshIcons = () => { try{ lucide.createIcons(); }catch(e){} };
@@ -194,22 +186,38 @@ const ROLE_COLOR = id => { const r = roles.find(x => x.id === id); return r ? r.
 const STATUS_LABEL = { new:'новая', accepted:'принята', rejected:'отклонена' };
 
 /* ============ гейт ============ */
-function unlock(){
+async function unlock(key){
+  KEY = key;
+  try { localStorage.setItem('mc_admin_key', key); } catch(e){}
   $('gate').style.display = 'none';
   $('app').classList.remove('opacity-0','pointer-events-none');
-  initFilters(); renderList();
+  await loadAll();
+  initFilters();
 }
-$('gateBtn').addEventListener('click', () => {
-  const idIn = $('gateId').value.trim();
-  const ok = ENV.ADMIN_ID !== '0' && idIn === String(ENV.ADMIN_ID);
-  if (ok) unlock(); else toast('Нет доступа. ID не совпадает с ADMIN_ID.', false);
-});
-(function gateBoot(){
-  const key = new URLSearchParams(location.search).get('key');
+async function loadAll(){
+  try { roles = await apiGet('/api/roles'); subs = await apiGet('/api/subs'); }
+  catch(e){ toast('Ошибка загрузки: ' + e.message, false); }
+  initFiltersOptions(); renderList();
+}
+async function tryKey(key, silent){
+  if (!key) return false;
+  try {
+    const r = await fetch('/api/subs?key=' + encodeURIComponent(key));
+    if (r.ok){ await unlock(key); return true; }
+    if (!silent) toast('Нет доступа. ID не совпадает с ADMIN_ID.', false);
+  } catch(e){ if (!silent) toast('Сервер недоступен.', false); }
+  return false;
+}
+$('gateBtn').addEventListener('click', () => tryKey($('gateId').value.trim(), false));
+$('gateId').addEventListener('keydown', e => { if (e.key === 'Enter') $('gateBtn').click(); });
+(async function gateBoot(){
   $('gateInfo').textContent = ENV.ADMIN_ID === '0'
-    ? 'Сначала зайди в admin.html и задай ADMIN_ID и токен бота — этот реестр открывается только у администратора.'
-    : (TG_USER ? 'Ты вошёл как id ' + TG_USER.id + '.' : 'Страница вне Telegram — введи свой Admin ID.');
-  if (ENV.ADMIN_ID !== '0' && ((TG_USER && String(TG_USER.id) === String(ENV.ADMIN_ID)) || (key && key === String(ENV.ADMIN_ID)))) unlock();
+    ? 'ADMIN_ID не задан на сервере — добавь переменную в панели Bothost и пересобери.'
+    : (TG_USER ? 'Ты вошёл как id ' + TG_USER.id + '.' : 'Введи свой Admin ID.');
+  const url = new URLSearchParams(location.search).get('key');
+  let saved = ''; try { saved = localStorage.getItem('mc_admin_key') || ''; } catch(e){}
+  const tgId = TG_USER ? String(TG_USER.id) : '';
+  for (const k of [url, tgId, saved]){ if (k && await tryKey(k, true)) return; }
 })();
 
 /* ============ фильтры и список ============ */
@@ -217,7 +225,7 @@ function initFilters(){
   $('fRole').innerHTML = '<option value="">все вакансии</option>' +
     roles.map(r => '<option value="' + r.id + '">' + esc(r.name) + '</option>').join('');
   ['fSearch','fRole','fStatus'].forEach(id => $(id).addEventListener('input', renderList));
-  $('refresh').addEventListener('click', () => { subs = load(SKEY, []); roles = load(RKEY, []); initFiltersOptions(); renderList(); toast('Список обновлён.'); });
+  $('refresh').addEventListener('click', async () => { await loadAll(); toast('Список обновлён с сервера.'); });
 }
 function initFiltersOptions(){
   const cur = $('fRole').value;
@@ -319,25 +327,20 @@ $('modal').addEventListener('click', e => { if (e.target === $('modal')) closeMo
 
 async function verdict(status){
   const s = subs.find(x => x.id === currentId); if (!s) return;
-  s.status = status; save(SKEY, subs);
+  const notify = $('mNotify').checked;
   let msg = status === 'accepted' ? 'Заявка принята.' : 'Заявка отклонена.';
-  if ($('mNotify').checked && s.userId){
-    const text = status === 'accepted'
-      ? '<b>CRAFT TEAM</b>\nТвоя заявка на вакансию «' + esc(s.roleName) + '» — <b>принята</b>. Администратор скоро напишет тебе лично. Добро пожаловать в команду!'
-      : '<b>CRAFT TEAM</b>\nЗаявка на вакансию «' + esc(s.roleName) + '» отклонена. Не расстраивайся — набери опыта и попробуй снова позже.';
-    try {
-      const res = await apiSend(s.userId, text);
-      if (res && res.ok) msg += ' Игрок уведомлён в ЛС.';
-      else msg += ' Не удалось написать игроку (возможно, он не запускал бота).';
-    } catch(e){ msg += ' Ошибка сети при уведомлении.'; }
-  }
+  try {
+    const res = await apiPost('/api/subs/' + s.id, { action: status, notify });
+    s.status = status;
+    if (notify) msg += res.delivered ? ' Игрок уведомлён в ЛС.' : ' Написать игроку не вышло (он не запускал бота).';
+  } catch(e){ toast('Ошибка сервера: ' + e.message, false); return; }
   closeModal(); renderList(); toast(msg, true);
 }
 $('mAccept').addEventListener('click', () => verdict('accepted'));
 $('mReject').addEventListener('click', () => verdict('rejected'));
 
 /* confirm() в Telegram WebView мёртв — двойное нажатие вместо него */
-$('mDelete').addEventListener('click', () => {
+$('mDelete').addEventListener('click', async () => {
   const b = $('mDelete');
   if (b.dataset.armed !== '1'){
     if (!b.dataset.orig) b.dataset.orig = b.innerHTML;
@@ -349,7 +352,10 @@ $('mDelete').addEventListener('click', () => {
   }
   delete b.dataset.armed;
   b.innerHTML = b.dataset.orig;
-  subs = subs.filter(x => x.id !== currentId); save(SKEY, subs);
+  const id = currentId;
+  try { await apiPost('/api/subs/' + id, { action:'delete' }); }
+  catch(e){ toast('Ошибка сервера: ' + e.message, false); return; }
+  subs = subs.filter(x => x.id !== id);
   closeModal(); renderList(); toast('Заявка удалена.');
   refreshIcons();
 });
