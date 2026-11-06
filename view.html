@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<title>CRAFT TEAM — заявки</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%236fbf3f'/%3E%3Crect y='5' width='16' height='11' fill='%238a5a2b'/%3E%3C/svg%3E" />
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  .pf  { font-family:'Press Start 2P', monospace; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  body { font-family:'Inter', sans-serif; background:#0c0e0a; color:#e8eadf; }
+  #bg-grid{ background-image:linear-gradient(rgba(127,219,79,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(127,219,79,.05) 1px,transparent 1px); background-size:36px 36px; }
+  #grain{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E"); }
+  .px-panel{ border:2px solid #2c3324; background:#12150d; box-shadow:0 6px 0 rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.03); }
+  .px-card{ border:2px solid #2c3324; background:#141810; box-shadow:0 5px 0 rgba(0,0,0,.5); transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+  .px-card:hover{ transform:translateY(-2px); border-color:#4a5a38; box-shadow:0 7px 0 rgba(0,0,0,.5); }
+  .pbtn{ border:2px solid #1e2416; box-shadow:0 4px 0 rgba(0,0,0,.55), inset 0 -3px 0 rgba(0,0,0,.28), inset 0 3px 0 rgba(255,255,255,.16); transition:transform .08s ease, box-shadow .08s ease, filter .15s ease; }
+  .pbtn:hover{ filter:brightness(1.1); }
+  .pbtn:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.55); }
+  .pinput{ background:#0e110a; border:2px solid #2c3324; box-shadow:inset 0 3px 0 rgba(0,0,0,.35); transition:border-color .15s ease, box-shadow .15s ease; }
+  .pinput:focus{ outline:none; border-color:#7fdb4f; box-shadow:inset 0 3px 0 rgba(0,0,0,.35), 0 0 0 3px rgba(127,219,79,.15); }
+  .rise{ animation:rise .45s cubic-bezier(.22,1,.36,1) both; } @keyframes rise{ from{ opacity:0; transform:translateY(16px);} to{ opacity:1; transform:none;} }
+  .toast{ animation:tin .3s cubic-bezier(.22,1,.36,1) both; } @keyframes tin{ from{ opacity:0; transform:translateY(12px);} to{ opacity:1; transform:none;} }
+  @keyframes blink{ 50%{ opacity:0; } } .blink{ animation:blink 1.1s steps(2,start) infinite; }
+  #modal{ transition:opacity .25s ease; } #modalBox{ transition:transform .3s cubic-bezier(.22,1,.36,1); }
+  .st-new      { color:#f6c453; border-color:#f6c45366; }
+  .st-accepted { color:#7fdb4f; border-color:#7fdb4f66; }
+  .st-rejected { color:#f0503c; border-color:#f0503c66; }
+  ::selection{ background:#7fdb4f; color:#0c0e0a; }
+  ::-webkit-scrollbar{ width:10px; } ::-webkit-scrollbar-thumb{ background:#2c3324; border:2px solid #0c0e0a; }
+</style>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+
+<svg width="0" height="0" class="absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-block" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="0" y="0" width="16" height="5" fill="#6fbf3f"/><rect x="0" y="0" width="16" height="1" fill="#8fe05a"/>
+      <rect x="3" y="4" width="2" height="2" fill="#5ea834"/><rect x="11" y="4" width="2" height="2" fill="#5ea834"/>
+      <rect x="0" y="5" width="16" height="11" fill="#8a5a2b"/>
+      <rect x="2" y="7" width="2" height="2" fill="#6b441e"/><rect x="9" y="9" width="3" height="2" fill="#6b441e"/><rect x="5" y="12" width="2" height="2" fill="#a06a34"/>
+    </g></symbol>
+    <symbol id="i-gem" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="6" y="2" width="4" height="1" fill="#bffcff"/><rect x="4" y="3" width="8" height="2" fill="#59e0e6"/><rect x="3" y="5" width="10" height="2" fill="#59e0e6"/>
+      <rect x="4" y="7" width="8" height="2" fill="#3fc4cf"/><rect x="6" y="9" width="4" height="2" fill="#3fc4cf"/><rect x="7" y="11" width="2" height="2" fill="#2fa9b4"/>
+      <rect x="5" y="4" width="2" height="1" fill="#e6feff"/>
+    </g></symbol>
+  </defs>
+</svg>
+
+<div id="bg-grid" class="fixed inset-0 pointer-events-none"></div>
+<div id="grain" class="fixed inset-0 pointer-events-none opacity-[0.05] mix-blend-overlay z-50"></div>
+
+<!-- ============ гейт ============ -->
+<div id="gate" class="fixed inset-0 z-[90] bg-[#0c0e0a]/95 backdrop-blur-sm flex items-center justify-center px-5">
+  <div class="px-panel p-8 md:p-10 w-full max-w-md rise text-center">
+    <span class="pbtn inline-flex items-center justify-center w-14 h-14 bg-[#1a2012] text-[#f0503c]"><i data-lucide="lock" class="w-6 h-6"></i></span>
+    <h1 class="pf text-[11px] md:text-sm mt-7">СПИСОК <span class="text-[#f6c453]">ЗАЯВОК</span><span class="blink text-[#7fdb4f]">_</span></h1>
+    <p id="gateInfo" class="mono text-[10px] text-[#98a28c] mt-5 leading-relaxed"></p>
+    <input id="gateId" class="pinput w-full px-4 py-3 mono text-[13px] mt-7" placeholder="твой Admin ID" />
+    <button id="gateBtn" class="pbtn w-full mt-4 px-6 py-3.5 bg-[#7fdb4f] text-[#0c0e0a] pf text-[10px]">ОТКРЫТЬ</button>
+  </div>
+</div>
+
+<!-- ============ шапка ============ -->
+<header class="relative z-10 max-w-6xl mx-auto px-5 pt-6 flex items-center justify-between gap-4">
+  <a href="index.html" class="flex items-center gap-3">
+    <span class="pbtn inline-flex items-center justify-center w-10 h-10 bg-[#1a2012]"><svg class="w-6 h-6"><use href="#i-block"/></svg></span>
+    <span class="pf text-[10px] md:text-xs leading-relaxed">CRAFT<br><span class="text-[#7fdb4f]">TEAM</span></span>
+  </a>
+  <nav class="flex items-center gap-2">
+    <a href="index.html" class="mono text-[10px] uppercase tracking-widest px-3 py-2 border-2 border-[#2c3324] text-[#98a28c] bg-[#12150d] hover:text-[#e8eadf] hover:border-[#4a5a38] transition-colors">Анкета</a>
+    <span class="mono text-[10px] uppercase tracking-widest px-3 py-2 border-2 border-[#2c3324] text-[#7fdb4f] bg-[#12150d]">Заявки</span>
+    <a href="admin.html" class="mono text-[10px] uppercase tracking-widest px-3 py-2 border-2 border-[#2c3324] text-[#98a28c] bg-[#12150d] hover:text-[#e8eadf] hover:border-[#4a5a38] transition-colors">Админка</a>
+  </nav>
+</header>
+
+<main id="app" class="relative z-10 max-w-6xl mx-auto px-5 pb-24 opacity-0 pointer-events-none transition-opacity duration-500">
+  <div class="pt-10 md:pt-14 flex flex-wrap items-end justify-between gap-5">
+    <div>
+      <p class="mono text-[10px] uppercase tracking-[0.35em] text-[#98a28c] mb-3">// реестр прохождений теста</p>
+      <h1 class="pf text-sm md:text-xl leading-relaxed">ЗАЯВКИ <span class="text-[#f6c453]">ИГРОКОВ</span></h1>
+    </div>
+    <button id="refresh" class="pbtn px-5 py-3 bg-[#1a2012] text-[#98a28c] mono text-[10px] uppercase tracking-widest inline-flex items-center gap-2 hover:text-[#e8eadf]">
+      <i data-lucide="refresh-ccw" class="w-3.5 h-3.5"></i> обновить
+    </button>
+  </div>
+
+  <!-- фильтры -->
+  <div class="px-panel mt-8 p-4 flex flex-wrap items-center gap-3">
+    <div class="relative flex-1 min-w-[180px]">
+      <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5f6b54]"></i>
+      <input id="fSearch" class="pinput w-full pl-10 pr-4 py-2.5 text-[13px]" placeholder="ник / имя / телеграм..." />
+    </div>
+    <select id="fRole" class="pinput px-3.5 py-2.5 mono text-[11px]"></select>
+    <select id="fStatus" class="pinput px-3.5 py-2.5 mono text-[11px]">
+      <option value="">все статусы</option>
+      <option value="new">новые</option>
+      <option value="accepted">принятые</option>
+      <option value="rejected">отклонённые</option>
+    </select>
+    <span class="mono text-[10px] text-[#5f6b54] ml-auto" id="countLine"></span>
+  </div>
+
+  <div id="list" class="mt-6 flex flex-col gap-4"></div>
+</main>
+
+<!-- ============ модалка заявки ============ -->
+<div id="modal" class="fixed inset-0 z-[70] bg-[#060805]/85 backdrop-blur-sm opacity-0 pointer-events-none flex items-end md:items-center justify-center p-0 md:p-6">
+  <div id="modalBox" class="px-panel w-full max-w-2xl max-h-[88vh] overflow-y-auto p-6 md:p-8 translate-y-8">
+    <div class="flex items-start justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <span id="mAvatar" class="pbtn w-12 h-12 inline-flex items-center justify-center font-semibold"></span>
+        <div>
+          <h3 id="mName" class="text-base font-semibold"></h3>
+          <p id="mMeta" class="mono text-[10px] text-[#98a28c] mt-1.5"></p>
+        </div>
+      </div>
+      <button id="mClose" class="pbtn w-10 h-10 inline-flex items-center justify-center bg-[#1a2012] text-[#98a28c] hover:text-[#f0503c] shrink-0"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div id="mBadge" class="mt-5"></div>
+    <div id="mAnswers" class="mt-6 flex flex-col gap-4"></div>
+    <label class="mt-7 flex items-center gap-2.5 cursor-pointer select-none">
+      <input type="checkbox" id="mNotify" class="accent-[#7fdb4f] w-4 h-4" checked />
+      <span class="mono text-[10px] uppercase tracking-widest text-[#98a28c]">уведомить игрока в Telegram о решении</span>
+    </label>
+    <div class="flex flex-wrap gap-3 mt-5">
+      <button id="mAccept" class="pbtn px-6 py-3.5 bg-[#7fdb4f] text-[#0c0e0a] pf text-[9px] inline-flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> ПРИНЯТЬ</button>
+      <button id="mReject" class="pbtn px-6 py-3.5 bg-[#5a1f1a] !border-[#7c2a22] text-[#ffb4ab] pf text-[9px] inline-flex items-center gap-2"><i data-lucide="x" class="w-4 h-4"></i> ОТКЛОНИТЬ</button>
+      <button id="mDelete" class="pbtn px-5 py-3.5 bg-[#1a2012] text-[#f0503c] mono text-[10px] uppercase tracking-widest inline-flex items-center gap-2 ml-auto"><i data-lucide="trash-2" class="w-4 h-4"></i> удалить</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[95] flex flex-col items-center gap-2 pointer-events-none w-[92vw] max-w-md"></div>
+
+<script>
+/* ============ ENV (читается так же, как на других страницах) ============ */
+const FALLBACK_ENV = { ADMIN_ID: "0", BOT_TOKEN: "PASTE_BOT_TOKEN" };
+function getEnv(){
+  let ls = {}; try { ls = JSON.parse(localStorage.getItem('mc_env') || '{}'); } catch(e){}
+  return {
+    ADMIN_ID:  (window.__ENV__ && window.__ENV__.ADMIN_ID)  || ls.ADMIN_ID  || FALLBACK_ENV.ADMIN_ID,
+    BOT_TOKEN: (window.__ENV__ && window.__ENV__.BOT_TOKEN) || ls.BOT_TOKEN || FALLBACK_ENV.BOT_TOKEN
+  };
+}
+const ENV = getEnv();
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+try { if (tg){ tg.ready(); tg.expand(); tg.setHeaderColor('#0c0e0a'); tg.setBackgroundColor('#0c0e0a'); } } catch(e){}
+const TG_USER = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
+
+async function apiSend(chatId, text){
+  const r = await fetch('https://api.telegram.org/bot' + ENV.BOT_TOKEN + '/sendMessage', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode:'HTML' })
+  });
+  return r.json();
+}
+
+/* ============ хранилище ============ */
+const RKEY = 'mc_roles_v1', SKEY = 'mc_subs_v1';
+const load = (k,d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch(e){ return d; } };
+const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+let roles = load(RKEY, []);
+let subs  = load(SKEY, []);
+let currentId = null;
+
+const $ = id => document.getElementById(id);
+const refreshIcons = () => { try{ lucide.createIcons(); }catch(e){} };
+function toast(msg, ok = true){
+  const t = document.createElement('div');
+  t.className = 'toast px-panel pointer-events-auto px-4 py-3' + (ok ? '' : ' !border-[#f0503c]');
+  t.innerHTML = '<span class="mono text-[11px] text-[#e8eadf]">' + esc(msg) + '</span>';
+  $('toasts').appendChild(t);
+  setTimeout(() => { t.style.transition = 'opacity .4s'; t.style.opacity = 0; setTimeout(() => t.remove(), 420); }, 3200);
+}
+const ROLE_COLOR = id => { const r = roles.find(x => x.id === id); return r ? r.color : '#98a28c'; };
+const STATUS_LABEL = { new:'новая', accepted:'принята', rejected:'отклонена' };
+
+/* ============ гейт ============ */
+function unlock(){
+  $('gate').style.display = 'none';
+  $('app').classList.remove('opacity-0','pointer-events-none');
+  initFilters(); renderList();
+}
+$('gateBtn').addEventListener('click', () => {
+  const idIn = $('gateId').value.trim();
+  const ok = ENV.ADMIN_ID !== '0' && idIn === String(ENV.ADMIN_ID);
+  if (ok) unlock(); else toast('Нет доступа. ID не совпадает с ADMIN_ID.', false);
+});
+(function gateBoot(){
+  const key = new URLSearchParams(location.search).get('key');
+  $('gateInfo').textContent = ENV.ADMIN_ID === '0'
+    ? 'Сначала зайди в admin.html и задай ADMIN_ID и токен бота — этот реестр открывается только у администратора.'
+    : (TG_USER ? 'Ты вошёл как id ' + TG_USER.id + '.' : 'Страница вне Telegram — введи свой Admin ID.');
+  if (ENV.ADMIN_ID !== '0' && ((TG_USER && String(TG_USER.id) === String(ENV.ADMIN_ID)) || (key && key === String(ENV.ADMIN_ID)))) unlock();
+})();
+
+/* ============ фильтры и список ============ */
+function initFilters(){
+  $('fRole').innerHTML = '<option value="">все вакансии</option>' +
+    roles.map(r => '<option value="' + r.id + '">' + esc(r.name) + '</option>').join('');
+  ['fSearch','fRole','fStatus'].forEach(id => $(id).addEventListener('input', renderList));
+  $('refresh').addEventListener('click', () => { subs = load(SKEY, []); roles = load(RKEY, []); initFiltersOptions(); renderList(); toast('Список обновлён.'); });
+}
+function initFiltersOptions(){
+  const cur = $('fRole').value;
+  $('fRole').innerHTML = '<option value="">все вакансии</option>' + roles.map(r => '<option value="' + r.id + '" ' + (r.id === cur ? 'selected' : '') + '>' + esc(r.name) + '</option>').join('');
+}
+
+function filtered(){
+  const q = $('fSearch').value.trim().toLowerCase();
+  const fr = $('fRole').value, fs = $('fStatus').value;
+  return subs.filter(s =>
+    (!fr || s.roleId === fr) && (!fs || s.status === fs) &&
+    (!q || (s.userName + ' ' + s.username + ' ' + s.roleName).toLowerCase().includes(q)));
+}
+
+function renderList(){
+  const arr = filtered();
+  $('countLine').textContent = 'показано: ' + arr.length + ' / ' + subs.length;
+  if (!arr.length){
+    $('list').innerHTML =
+      '<div class="px-panel p-12 text-center rise">' +
+        '<svg class="w-14 h-14 mx-auto opacity-40"><use href="#i-gem"/></svg>' +
+        '<p class="pf text-[10px] text-[#5f6b54] mt-7 leading-relaxed">ПОКА ПУСТО</p>' +
+        '<p class="mono text-[10px] text-[#5f6b54] mt-4">заявки появятся здесь после прохождения теста в index.html</p>' +
+      '</div>';
+    return;
+  }
+  $('list').innerHTML = arr.map((s, k) => {
+    const c = s.roleColor || ROLE_COLOR(s.roleId);
+    const hue = (s.userId * 47) % 360;
+    return '<button class="px-card w-full text-left p-5 flex items-center gap-4 rise" style="animation-delay:' + Math.min(k * 50, 400) + 'ms" data-open="' + s.id + '">' +
+      '<span class="pbtn w-11 h-11 shrink-0 inline-flex items-center justify-center font-semibold text-sm" style="background:hsl(' + hue + ',45%,26%)">' + esc((s.userName || '?')[0].toUpperCase()) + '</span>' +
+      '<span class="flex-1 min-w-0">' +
+        '<span class="flex items-center gap-2.5 flex-wrap">' +
+          '<span class="text-[14px] font-medium truncate">' + esc(s.userName) + '</span>' +
+          (s.username ? '<span class="mono text-[10px] text-[#59e0e6]">@' + esc(s.username) + '</span>' : '') +
+        '</span>' +
+        '<span class="flex items-center gap-2.5 mt-2 flex-wrap">' +
+          '<span class="mono text-[9px] uppercase tracking-widest px-2 py-1 border-2" style="color:' + c + ';border-color:' + c + '55">' + esc(s.roleName) + '</span>' +
+          '<span class="mono text-[9px] uppercase tracking-widest px-2 py-1 border-2 st-' + s.status + '">' + STATUS_LABEL[s.status] + '</span>' +
+          (s.delivered ? '<span class="mono text-[9px] text-[#5f6b54] inline-flex items-center gap-1.5"><i data-lucide="send" class="w-3 h-3 text-[#7fdb4f]"></i> уведомлён</span>' : '') +
+        '</span>' +
+      '</span>' +
+      '<span class="mono text-[9px] text-[#5f6b54] shrink-0 hidden sm:block text-right leading-relaxed">' + esc(s.dateStr) + '</span>' +
+      '<i data-lucide="chevron-right" class="w-4 h-4 text-[#5f6b54] shrink-0"></i>' +
+    '</button>';
+  }).join('');
+  refreshIcons();
+  document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openModal(+b.dataset.open)));
+}
+
+/* ============ модалка ============ */
+function openModal(id){
+  const s = subs.find(x => x.id === id); if (!s) return;
+  currentId = id;
+  const c = s.roleColor || ROLE_COLOR(s.roleId);
+  const hue = (s.userId * 47) % 360;
+  $('mAvatar').style.background = 'hsl(' + hue + ',45%,26%)';
+  $('mAvatar').textContent = (s.userName || '?')[0].toUpperCase();
+  $('mName').textContent = s.userName;
+  $('mMeta').textContent = (s.username ? '@' + s.username + ' · ' : '') + 'id ' + s.userId + ' · ' + s.dateStr;
+  $('mBadge').innerHTML = '<span class="mono text-[10px] uppercase tracking-widest px-3 py-1.5 border-2 mr-2" style="color:' + c + ';border-color:' + c + '55">' + esc(s.roleName) + '</span>' +
+    '<span class="mono text-[10px] uppercase tracking-widest px-3 py-1.5 border-2 st-' + s.status + '">' + STATUS_LABEL[s.status] + '</span>';
+  $('mAnswers').innerHTML = s.answers.map((a, i) =>
+    '<div class="px-card !shadow-none p-4 md:p-5">' +
+      '<p class="mono text-[9px] uppercase tracking-widest text-[#5f6b54]">вопрос ' + (i + 1) + '</p>' +
+      '<p class="text-[13.5px] font-medium mt-2 leading-snug">' + esc(a.q) + '</p>' +
+      '<p class="mt-3 text-[13px] leading-relaxed text-[#b9c6a8] whitespace-pre-wrap border-l-2 pl-3.5" style="border-color:' + c + '66">' + esc(a.a) + '</p>' +
+    '</div>'
+  ).join('');
+  $('modal').classList.remove('opacity-0','pointer-events-none');
+  $('modalBox').classList.remove('translate-y-8');
+  refreshIcons();
+}
+function closeModal(){
+  $('modal').classList.add('opacity-0','pointer-events-none');
+  $('modalBox').classList.add('translate-y-8');
+  currentId = null;
+}
+$('mClose').addEventListener('click', closeModal);
+$('modal').addEventListener('click', e => { if (e.target === $('modal')) closeModal(); });
+
+async function verdict(status){
+  const s = subs.find(x => x.id === currentId); if (!s) return;
+  s.status = status; save(SKEY, subs);
+  let msg = status === 'accepted' ? 'Заявка принята.' : 'Заявка отклонена.';
+  if ($('mNotify').checked && s.userId){
+    const text = status === 'accepted'
+      ? '<b>CRAFT TEAM</b>\nТвоя заявка на вакансию «' + esc(s.roleName) + '» — <b>принята</b>. Администратор скоро напишет тебе лично. Добро пожаловать в команду!'
+      : '<b>CRAFT TEAM</b>\nЗаявка на вакансию «' + esc(s.roleName) + '» отклонена. Не расстраивайся — набери опыта и попробуй снова позже.';
+    try {
+      const res = await apiSend(s.userId, text);
+      if (res && res.ok) msg += ' Игрок уведомлён в ЛС.';
+      else msg += ' Не удалось написать игроку (возможно, он не запускал бота).';
+    } catch(e){ msg += ' Ошибка сети при уведомлении.'; }
+  }
+  closeModal(); renderList(); toast(msg, true);
+}
+$('mAccept').addEventListener('click', () => verdict('accepted'));
+$('mReject').addEventListener('click', () => verdict('rejected'));
+$('mDelete').addEventListener('click', () => {
+  if (!confirm('Удалить эту заявку?')) return;
+  subs = subs.filter(x => x.id !== currentId); save(SKEY, subs);
+  closeModal(); renderList(); toast('Заявка удалена.');
+});
+
+refreshIcons();
+</script>
+</body>
+</html>

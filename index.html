@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<title>CRAFT TEAM — анкета на сервер</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%236fbf3f'/%3E%3Crect y='5' width='16' height='11' fill='%238a5a2b'/%3E%3C/svg%3E" />
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  .pf  { font-family:'Press Start 2P', monospace; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  body { font-family:'Inter', sans-serif; background:#0c0e0a; color:#e8eadf; }
+
+  /* ---------- фон ---------- */
+  #bg-grid{ background-image:linear-gradient(rgba(127,219,79,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(127,219,79,.05) 1px,transparent 1px); background-size:36px 36px; }
+  .float-a{ animation:floatA 7s ease-in-out infinite alternate; }
+  .float-b{ animation:floatA 9s ease-in-out -3s infinite alternate-reverse; }
+  .float-c{ animation:floatA 11s ease-in-out -6s infinite alternate; }
+  @keyframes floatA{ from{ transform:translateY(0) rotate(-2deg);} to{ transform:translateY(-18px) rotate(3deg);} }
+  .blink{ animation:blink 1.1s steps(2,start) infinite; }
+  @keyframes blink{ 50%{ opacity:0; } }
+  #grain{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E"); }
+
+  /* ---------- пиксельный UI ---------- */
+  .px-panel{ border:2px solid #2c3324; background:#12150d; box-shadow:0 6px 0 rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.03); }
+  .px-card{ border:2px solid #2c3324; background:#141810; box-shadow:0 5px 0 rgba(0,0,0,.5); transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+  .px-card:hover{ transform:translateY(-3px); box-shadow:0 8px 0 rgba(0,0,0,.5); border-color:#4a5a38; }
+  .px-card:active{ transform:translateY(1px); box-shadow:0 3px 0 rgba(0,0,0,.5); }
+  .pbtn{ border:2px solid #1e2416; box-shadow:0 4px 0 rgba(0,0,0,.55), inset 0 -3px 0 rgba(0,0,0,.28), inset 0 3px 0 rgba(255,255,255,.16); transition:transform .08s ease, box-shadow .08s ease, filter .15s ease; }
+  .pbtn:hover{ filter:brightness(1.08); }
+  .pbtn:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.12); }
+  .pbtn:disabled{ opacity:.45; pointer-events:none; }
+  .pinput{ background:#0e110a; border:2px solid #2c3324; box-shadow:inset 0 3px 0 rgba(0,0,0,.35); transition:border-color .15s ease, box-shadow .15s ease; }
+  .pinput:focus{ outline:none; border-color:#7fdb4f; box-shadow:inset 0 3px 0 rgba(0,0,0,.35), 0 0 0 3px rgba(127,219,79,.15); }
+  .opt-card{ cursor:pointer; }
+  .opt-card input{ display:none; }
+  .opt-card.checked{ border-color:#7fdb4f !important; box-shadow:0 5px 0 rgba(0,0,0,.5), 0 0 0 3px rgba(127,219,79,.18) !important; }
+  .opt-card.checked .opt-mark{ background:#7fdb4f; border-color:#7fdb4f; }
+  .opt-card.checked .opt-mark svg{ opacity:1; }
+  .seg{ height:10px; flex:1; background:#0e110a; border:2px solid #2c3324; box-shadow:inset 0 2px 0 rgba(0,0,0,.4); }
+  .seg.on{ background:var(--acc,#7fdb4f); border-color:color-mix(in srgb, var(--acc,#7fdb4f) 60%, #000); }
+  .shake{ animation:shake .4s ease; }
+  @keyframes shake{ 20%,60%{ transform:translateX(-7px);} 40%,80%{ transform:translateX(7px);} }
+  .rise{ animation:rise .5s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes rise{ from{ opacity:0; transform:translateY(18px);} to{ opacity:1; transform:translateY(0);} }
+  #testOverlay{ transition:transform .45s cubic-bezier(.7,0,.2,1), opacity .3s ease; }
+  .toast{ animation:toastIn .3s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes toastIn{ from{ opacity:0; transform:translateY(12px) scale(.96);} to{ opacity:1; transform:none;} }
+  .pulse-heart{ animation:pulseH 1.4s ease-in-out infinite; }
+  @keyframes pulseH{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.12);} }
+  ::selection{ background:#7fdb4f; color:#0c0e0a; }
+  ::-webkit-scrollbar{ width:10px; } ::-webkit-scrollbar-thumb{ background:#2c3324; border:2px solid #0c0e0a; }
+</style>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+
+<!-- ================= SVG-спрайт: пиксельные иконки ================= -->
+<svg width="0" height="0" class="absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-block" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="0" y="0" width="16" height="5" fill="#6fbf3f"/><rect x="0" y="0" width="16" height="1" fill="#8fe05a"/>
+      <rect x="3" y="4" width="2" height="2" fill="#5ea834"/><rect x="11" y="4" width="2" height="2" fill="#5ea834"/>
+      <rect x="0" y="5" width="16" height="11" fill="#8a5a2b"/>
+      <rect x="2" y="7" width="2" height="2" fill="#6b441e"/><rect x="9" y="9" width="3" height="2" fill="#6b441e"/><rect x="5" y="12" width="2" height="2" fill="#a06a34"/>
+    </g></symbol>
+    <symbol id="i-pick" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="1" y="3" width="3" height="2" fill="#9aa3a7"/><rect x="4" y="2" width="8" height="2" fill="#cfd6da"/><rect x="12" y="3" width="3" height="2" fill="#9aa3a7"/>
+      <rect x="7" y="4" width="2" height="11" fill="#8a5a2b"/><rect x="7" y="4" width="2" height="2" fill="#5d3b18"/>
+    </g></symbol>
+    <symbol id="i-sword" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="7" y="1" width="2" height="2" fill="#e9eef1"/><rect x="6" y="3" width="4" height="7" fill="#cfd6da"/><rect x="7" y="3" width="1" height="7" fill="#f4f8fa"/>
+      <rect x="3" y="10" width="10" height="2" fill="#f6c453"/><rect x="7" y="12" width="2" height="3" fill="#8a5a2b"/>
+    </g></symbol>
+    <symbol id="i-gem" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="6" y="2" width="4" height="1" fill="#bffcff"/><rect x="4" y="3" width="8" height="2" fill="#59e0e6"/><rect x="3" y="5" width="10" height="2" fill="#59e0e6"/>
+      <rect x="4" y="7" width="8" height="2" fill="#3fc4cf"/><rect x="6" y="9" width="4" height="2" fill="#3fc4cf"/><rect x="7" y="11" width="2" height="2" fill="#2fa9b4"/>
+      <rect x="5" y="4" width="2" height="1" fill="#e6feff"/>
+    </g></symbol>
+    <symbol id="i-star" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="7" y="1" width="2" height="14" fill="#e0a93a"/><rect x="1" y="7" width="4" height="2" fill="#e0a93a"/><rect x="11" y="7" width="4" height="2" fill="#e0a93a"/>
+      <rect x="4" y="4" width="2" height="2" fill="#e0a93a"/><rect x="10" y="4" width="2" height="2" fill="#e0a93a"/><rect x="4" y="10" width="2" height="2" fill="#e0a93a"/><rect x="10" y="10" width="2" height="2" fill="#e0a93a"/>
+      <rect x="6" y="6" width="4" height="4" fill="#ffd76a"/>
+    </g></symbol>
+    <symbol id="i-heart" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="2" y="2" width="4" height="2" fill="#f0503c"/><rect x="10" y="2" width="4" height="2" fill="#f0503c"/>
+      <rect x="1" y="4" width="14" height="4" fill="#f0503c"/><rect x="2" y="8" width="12" height="2" fill="#d8453a"/>
+      <rect x="4" y="10" width="8" height="2" fill="#d8453a"/><rect x="6" y="12" width="4" height="2" fill="#c23a2a"/>
+      <rect x="3" y="3" width="2" height="2" fill="#ff8f7a"/>
+    </g></symbol>
+    <symbol id="i-book" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="3" y="2" width="10" height="12" fill="#5b8fd4"/><rect x="3" y="2" width="2" height="12" fill="#3c6bb0"/>
+      <rect x="6" y="4" width="6" height="1" fill="#dce9f9"/><rect x="6" y="7" width="6" height="1" fill="#dce9f9"/><rect x="6" y="10" width="4" height="1" fill="#dce9f9"/>
+    </g></symbol>
+    <symbol id="i-creeper" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect width="16" height="16" fill="#57c93a"/><rect x="2" y="2" width="3" height="3" fill="#74e051"/><rect x="12" y="1" width="3" height="3" fill="#74e051"/><rect x="1" y="10" width="3" height="3" fill="#4ab331"/>
+      <rect x="3" y="4" width="3" height="4" fill="#12300b"/><rect x="10" y="4" width="3" height="4" fill="#12300b"/>
+      <rect x="6" y="8" width="4" height="2" fill="#12300b"/><rect x="5" y="10" width="6" height="3" fill="#12300b"/><rect x="5" y="13" width="2" height="2" fill="#12300b"/><rect x="9" y="13" width="2" height="2" fill="#12300b"/>
+    </g></symbol>
+  </defs>
+</svg>
+
+<!-- ================= фон ================= -->
+<div id="bg-grid" class="fixed inset-0 pointer-events-none"></div>
+<div class="fixed inset-0 pointer-events-none overflow-hidden" id="bg-deco">
+  <svg class="absolute w-14 h-14 opacity-30 float-a" style="top:12%; left:6%"><use href="#i-block"/></svg>
+  <svg class="absolute w-10 h-10 opacity-25 float-b" style="top:26%; right:10%"><use href="#i-gem"/></svg>
+  <svg class="absolute w-12 h-12 opacity-20 float-c" style="bottom:24%; left:10%"><use href="#i-tnt-b"/><use href="#i-star"/></svg>
+  <svg class="absolute w-9 h-9 opacity-25 float-a" style="top:58%; right:6%"><use href="#i-pick"/></svg>
+  <svg class="absolute w-8 h-8 opacity-20 float-b" style="bottom:14%; right:22%"><use href="#i-block"/></svg>
+</div>
+<div id="grain" class="fixed inset-0 pointer-events-none opacity-[0.05] mix-blend-overlay z-50"></div>
+
+<!-- ================= шапка ================= -->
+<header class="relative z-10 max-w-5xl mx-auto px-5 pt-6 flex items-center justify-between gap-4">
+  <a href="index.html" class="flex items-center gap-3 group">
+    <span class="pbtn inline-flex items-center justify-center w-10 h-10 bg-[#1a2012]"><svg class="w-6 h-6"><use href="#i-block"/></svg></span>
+    <span class="pf text-[10px] md:text-xs leading-relaxed text-[#e8eadf]">CRAFT<br><span class="text-[#7fdb4f]">TEAM</span></span>
+  </a>
+  <nav class="flex items-center gap-2">
+    <span class="mono hidden md:inline-block text-[10px] uppercase tracking-widest px-3 py-2 border-2 border-[#2c3324] text-[#7fdb4f] bg-[#12150d]">Анкета</span>
+    <a href="view.html" class="mono hidden md:inline-block text-[10px] uppercase tracking-widest px-3 py-2 border-2 border-[#2c3324] text-[#98a28c] bg-[#12150d] hover:text-[#e8eadf] hover:border-[#4a5a38] transition-colors">Заявки</a>
+    <a href="admin.html" class="mono hidden md:inline-block text-[10px] uppercase tracking-widest px-3 py-2 border-2 border-[#2c3324] text-[#98a28c] bg-[#12150d] hover:text-[#e8eadf] hover:border-[#4a5a38] transition-colors">Админка</a>
+    <div id="userChip" class="flex items-center gap-2.5 pl-1"></div>
+  </nav>
+</header>
+
+<!-- ================= главная ================= -->
+<main class="relative z-10 max-w-5xl mx-auto px-5 pb-24">
+
+  <!-- вакансии -->
+  <section id="roles" class="pt-10 md:pt-14">
+    <div class="flex items-end justify-between mb-6">
+      <div>
+        <p class="mono text-[10px] uppercase tracking-[0.3em] text-[#98a28c] mb-2">01 // вакансии</p>
+        <h2 class="pf text-sm md:text-base text-[#e8eadf]">КЕМ ХОЧЕШЬ БЫТЬ?</h2>
+      </div>
+      <span class="mono text-[10px] text-[#5f6b54]" id="rolesCount"></span>
+    </div>
+    <div id="rolesGrid" class="grid sm:grid-cols-2 gap-5"></div>
+  </section>
+
+</main>
+
+<!-- ================= оверлей теста ================= -->
+<div id="testOverlay" class="fixed inset-0 z-40 bg-[#0c0e0a] translate-y-full opacity-0 overflow-y-auto">
+  <div class="max-w-2xl mx-auto px-5 py-8 md:py-12 min-h-full flex flex-col">
+
+    <div class="flex items-center justify-between gap-4 mb-8">
+      <div class="flex items-center gap-3">
+        <span id="tIcon" class="pbtn inline-flex items-center justify-center w-11 h-11"></span>
+        <div>
+          <p class="mono text-[9px] uppercase tracking-[0.3em] text-[#98a28c]">тест на вакансию</p>
+          <h3 id="tRoleName" class="pf text-[11px] md:text-sm mt-1.5"></h3>
+        </div>
+      </div>
+      <button id="tClose" class="pbtn w-11 h-11 inline-flex items-center justify-center bg-[#1a2012] text-[#98a28c] hover:text-[#f0503c]" title="Закрыть">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <div class="flex gap-1.5 mb-9" id="tProgress"></div>
+
+    <!-- вопрос -->
+    <div id="qWrap">
+      <div id="qCard" class="px-panel p-6 md:p-8 rise">
+        <p id="qCounter" class="mono text-[10px] text-[#5f6b54] mb-4"></p>
+        <h4 id="qText" class="text-lg md:text-xl font-medium leading-snug mb-7"></h4>
+        <div id="qInput"></div>
+        <p id="qHint" class="mono text-[10px] text-[#5f6b54] mt-5"></p>
+      </div>
+      <div class="flex items-center justify-between gap-4 mt-8">
+        <button id="qBack" class="pbtn inline-flex items-center gap-2 px-5 py-3.5 bg-[#1a2012] text-[#98a28c] mono text-[11px] uppercase tracking-widest hover:text-[#e8eadf]">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> назад
+        </button>
+        <button id="qNext" class="pbtn inline-flex items-center gap-2 px-6 py-3.5 bg-[#7fdb4f] text-[#0c0e0a] pf text-[9px] md:text-[10px]">
+          <span id="qNextLabel">ДАЛЕЕ</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- финал -->
+    <div id="doneWrap" class="hidden flex-1 flex flex-col items-center justify-center text-center py-14 rise">
+      <svg class="w-20 h-20 pulse-heart drop-shadow-[0_8px_0_rgba(0,0,0,.4)]"><use href="#i-heart"/></svg>
+      <h3 class="pf text-sm md:text-base mt-9">ЗАЯВКА <span class="text-[#7fdb4f]">ОТПРАВЛЕНА</span></h3>
+      <p id="doneText" class="mt-6 max-w-sm text-sm leading-relaxed text-[#98a28c]"></p>
+      <div class="flex flex-wrap justify-center gap-4 mt-10">
+        <button id="doneBack" class="pbtn inline-flex items-center gap-2 px-6 py-3.5 bg-[#1a2012] text-[#98a28c] mono text-[11px] uppercase tracking-widest hover:text-[#e8eadf]">
+          <i data-lucide="home" class="w-4 h-4"></i> к вакансиям
+        </button>
+        <button id="doneClose" class="pbtn hidden items-center gap-2 px-6 py-3.5 bg-[#59e0e6] text-[#0c0e0a] pf text-[9px]">
+          ЗАКРЫТЬ
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- тосты -->
+<div id="toasts" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[80] flex flex-col items-center gap-2 pointer-events-none w-[92vw] max-w-md"></div>
+
+<script>
+/* ================================================================
+ * ENV — значения подхватываются в порядке приоритета:
+ *  1) window.__ENV__  (инжект переменных окружения при деплое)
+ *  2) localStorage    (задаётся один раз в admin.html -> «Бот»)
+ *  3) заглушки ниже
+ * ================================================================ */
+const FALLBACK_ENV = { ADMIN_ID: "0", BOT_TOKEN: "PASTE_BOT_TOKEN" };
+function getEnv(){
+  let ls = {}; try { ls = JSON.parse(localStorage.getItem('mc_env') || '{}'); } catch(e){}
+  return {
+    ADMIN_ID:  (window.__ENV__ && window.__ENV__.ADMIN_ID)  || ls.ADMIN_ID  || FALLBACK_ENV.ADMIN_ID,
+    BOT_TOKEN: (window.__ENV__ && window.__ENV__.BOT_TOKEN) || ls.BOT_TOKEN || FALLBACK_ENV.BOT_TOKEN
+  };
+}
+const ENV = getEnv();
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------------- Telegram ---------------- */
+const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+try { if (tg){ tg.ready(); tg.expand(); tg.setHeaderColor('#0c0e0a'); tg.setBackgroundColor('#0c0e0a'); } } catch(e){}
+const TG_USER = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
+const ME = TG_USER || { id: 0, first_name: 'Гость', username: 'guest', demo: true };
+
+async function apiSend(chatId, text){
+  const r = await fetch('https://api.telegram.org/bot' + ENV.BOT_TOKEN + '/sendMessage', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode:'HTML', disable_web_page_preview:true })
+  });
+  return r.json();
+}
+
+/* ---------------- хранилище ---------------- */
+const RKEY = 'mc_roles_v1', SKEY = 'mc_subs_v1';
+const load = (k,d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch(e){ return d; } };
+const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+
+const DEFAULT_ROLES = [
+  { id:'r1', name:'Хелпер', icon:'i-pick', color:'#7fdb4f', open:true,
+    desc:'Правая рука игроков: отвечает в чате, помогает новичкам освоиться и следит за настроением сервера.',
+    questions:[
+      { id:'q1', type:'text', text:'Твой ник в Minecraft и возраст?' },
+      { id:'q2', type:'long', text:'Расскажи о своём опыте помощи или модерации на других серверах.', min:24 },
+      { id:'q3', type:'choice', text:'Игрок в чате просит выдать ему вещи «по-быстрому». Твои действия?', options:['Выдам, если он играет давно','Вежливо откажу и объясню правила','Проигнорирую','Сразу накажу мутом'] },
+      { id:'q4', type:'multi', text:'Что готов(а) делать на сервере?', options:['Отвечать в чате','Помогать новичкам','Следить за порядком','Придумывать ивенты'] }
+    ]},
+  { id:'r2', name:'Модератор', icon:'i-sword', color:'#f0503c', open:true,
+    desc:'Страж порядка: разбирает репорты, ловит читеров и решает конфликты быстро и честно.',
+    questions:[
+      { id:'q1', type:'text', text:'Твой ник в Minecraft и возраст?' },
+      { id:'q2', type:'long', text:'Опиши конфликтную ситуацию, которую ты разрешил(а), и чем всё закончилось.', min:24 },
+      { id:'q3', type:'choice', text:'Заметил(а) подозрительного игрока с читами. Первым делом:', options:['Сниму доказательства и доложу старшим','Сразу забаню','Спрослю об этом в общем чате','Напишу ему в личку'] },
+      { id:'q4', type:'text', text:'Сколько часов в неделю готов(а) уделять серверу?' }
+    ]},
+  { id:'r3', name:'Билдер', icon:'i-block', color:'#f6c453', open:true,
+    desc:'Архитектор мира: спавны, хабы, арены и декор — всё, что делает сервер красивым.',
+    questions:[
+      { id:'q1', type:'text', text:'Твой ник в Minecraft и возраст?' },
+      { id:'q2', type:'long', text:'Опиши свой стиль и лучшие постройки. Можно ссылки на скриншоты.', min:24 },
+      { id:'q3', type:'choice', text:'В каком стиле строишь чаще всего?', options:['Средневековье','Модерн','Фэнтези','Органика / терраформинг'] }
+    ]},
+  { id:'r4', name:'Ивент-менеджер', icon:'i-star', color:'#59e0e6', open:true,
+    desc:'Душа вечеринки: придумывает ивенты, пишет сценарии и превращает вечер пятницы в приключение.',
+    questions:[
+      { id:'q1', type:'text', text:'Твой ник в Minecraft и возраст?' },
+      { id:'q2', type:'long', text:'Придумай мини-ивент на 30 минут и опиши его сценарий по шагам.', min:24 },
+      { id:'q3', type:'multi', text:'Что умеешь?', options:['Писать сценарии','Строить арены','Вести трансляции','Монтировать видео'] }
+    ]}
+];
+let roles = load(RKEY, null);
+if (!roles){ roles = DEFAULT_ROLES; save(RKEY, roles); }
+
+/* ---------------- утилиты ---------------- */
+const $ = id => document.getElementById(id);
+function refreshIcons(){ try{ lucide.createIcons(); }catch(e){} }
+function toast(msg, ok = true){
+  const t = document.createElement('div');
+  t.className = 'toast px-panel pointer-events-auto px-4 py-3 flex items-center gap-2.5 ' + (ok ? '' : '!border-[#f0503c]');
+  t.innerHTML = '<span class="inline-flex items-center justify-center w-6 h-6 border-2 ' + (ok ? 'border-[#7fdb4f] text-[#7fdb4f]' : 'border-[#f0503c] text-[#f0503c]') + '">' +
+    '<i data-lucide="' + (ok ? 'check' : 'alert-triangle') + '" class="w-3.5 h-3.5"></i></span>' +
+    '<span class="mono text-[11px] leading-snug text-[#e8eadf]">' + esc(msg) + '</span>';
+  $('toasts').appendChild(t); refreshIcons();
+  setTimeout(() => { t.style.transition = 'opacity .4s, transform .4s'; t.style.opacity = 0; t.style.transform = 'translateY(8px)'; setTimeout(() => t.remove(), 420); }, 3400);
+}
+
+/* ---------------- чип пользователя ---------------- */
+(function renderUser(){
+  const hue = (ME.id * 47) % 360;
+  $('userChip').innerHTML =
+    '<span class="hidden sm:block text-right leading-tight">' +
+      '<span class="block text-[12px] font-medium text-[#e8eadf]">' + esc(ME.first_name) + '</span>' +
+      '<span class="block mono text-[9px] text-[#98a28c]">' + (ME.demo ? 'демо-режим (вне Telegram)' : '@' + esc(ME.username || 'no_username')) + '</span>' +
+    '</span>' +
+    '<span class="pbtn w-10 h-10 inline-flex items-center justify-center font-semibold text-sm" style="background:hsl(' + hue + ',45%,30%)">' + esc((ME.first_name || '?')[0].toUpperCase()) + '</span>';
+})();
+
+/* ---------------- список вакансий ---------------- */
+function renderRoles(){
+  $('rolesCount').textContent = 'всего: ' + roles.length;
+  $('rolesGrid').innerHTML = roles.map((r, k) => {
+    const closed = !r.open;
+    return '<button class="px-card text-left p-6 relative rise ' + (closed ? 'opacity-50 saturate-0 pointer-events-none' : '') + '" style="animation-delay:' + (k * 70) + 'ms" data-role="' + r.id + '">' +
+      (closed ? '<span class="absolute top-4 right-4 mono text-[9px] uppercase tracking-widest px-2 py-1 border-2 border-[#f0503c] text-[#f0503c]">набор закрыт</span>' : '') +
+      '<span class="pbtn inline-flex items-center justify-center w-14 h-14 mb-5" style="background:' + r.color + '22; border-color:' + r.color + '55">' +
+        '<svg class="w-9 h-9"><use href="#' + r.icon + '"/></svg></span>' +
+      '<h3 class="pf text-[11px] md:text-xs" style="color:' + r.color + '">' + esc(r.name).toUpperCase() + '</h3>' +
+      '<p class="mt-3.5 text-[13px] leading-relaxed text-[#98a28c]">' + esc(r.desc) + '</p>' +
+      '<p class="mono text-[9px] uppercase tracking-widest text-[#5f6b54] mt-5 flex items-center gap-2">' +
+        '<i data-lucide="list-checks" class="w-3.5 h-3.5"></i> вопросов: ' + r.questions.length +
+        '<i data-lucide="arrow-right" class="w-3.5 h-3.5 ml-auto"></i></p>' +
+    '</button>';
+  }).join('');
+  refreshIcons();
+  document.querySelectorAll('[data-role]').forEach(b => b.addEventListener('click', () => startTest(b.dataset.role)));
+}
+
+/* ---------------- тест ---------------- */
+const state = { role:null, idx:0, answers:{}, busy:false };
+
+function startTest(roleId){
+  const role = roles.find(r => r.id === roleId);
+  if (!role) return;
+  state.role = role; state.idx = 0; state.answers = {}; state.busy = false;
+  $('tRoleName').textContent = role.name.toUpperCase();
+  $('tRoleName').style.color = role.color;
+  $('tIcon').style.background = role.color + '22';
+  $('tIcon').style.borderColor = role.color + '55';
+  $('tIcon').innerHTML = '<svg class="w-7 h-7"><use href="#' + role.icon + '"/></svg>';
+  $('doneWrap').classList.add('hidden'); $('qWrap').classList.remove('hidden');
+  $('testOverlay').classList.remove('translate-y-full','opacity-0');
+  renderProgress(); renderQuestion(); refreshIcons();
+}
+function closeTest(){ $('testOverlay').classList.add('translate-y-full','opacity-0'); }
+
+function renderProgress(){
+  const n = state.role.questions.length;
+  $('tProgress').innerHTML = Array.from({length:n}, (_, i) =>
+    '<span class="seg ' + (i <= state.idx ? 'on' : '') + '" style="--acc:' + state.role.color + '"></span>').join('');
+}
+
+function renderQuestion(){
+  const q = state.role.questions[state.idx];
+  const acc = state.role.color;
+  $('qCounter').textContent = 'вопрос ' + (state.idx + 1) + ' / ' + state.role.questions.length;
+  $('qText').textContent = q.text;
+  $('qNextLabel').textContent = state.idx === state.role.questions.length - 1 ? 'ОТПРАВИТЬ' : 'ДАЛЕЕ';
+  $('qBack').style.visibility = 'visible';
+  const saved = state.answers[q.id];
+  const card = $('qCard');
+  card.classList.remove('rise'); void card.offsetWidth; card.classList.add('rise');
+
+  let html = '';
+  if (q.type === 'text'){
+    html = '<input id="qTextInput" class="pinput w-full px-4 py-3.5 text-[14px] text-[#e8eadf] placeholder-[#5f6b54]" maxlength="200" placeholder="Твой ответ..." value="' + esc(saved || '') + '" />';
+    $('qHint').textContent = 'короткий ответ, одна строка';
+  } else if (q.type === 'long'){
+    const min = q.min || 24;
+    html = '<textarea id="qTextInput" rows="5" class="pinput w-full px-4 py-3.5 text-[14px] leading-relaxed text-[#e8eadf] placeholder-[#5f6b54] resize-none" maxlength="1500" placeholder="Пиши развёрнуто...">' + esc(saved || '') + '</textarea>';
+    $('qHint').innerHTML = 'минимум ' + min + ' символов · сейчас: <span id="qChars">0</span>';
+  } else {
+    const type = q.type === 'choice' ? 'radio' : 'checkbox';
+    const sel = Array.isArray(saved) ? saved : (saved ? [saved] : []);
+    html = '<div class="flex flex-col gap-3">' + q.options.map((o, i) => {
+      const on = sel.includes(o);
+      return '<label class="opt-card px-card flex items-center gap-4 px-4 py-3.5 ' + (on ? 'checked' : '') + '" style="--acc:' + acc + '">' +
+        '<input type="' + type + '" name="opt" value="' + esc(o) + '" ' + (on ? 'checked' : '') + ' />' +
+        '<span class="opt-mark w-5 h-5 shrink-0 inline-flex items-center justify-center border-2 border-[#3a4530] bg-[#0e110a] transition-colors">' +
+          '<i data-lucide="check" class="w-3.5 h-3.5 text-[#0c0e0a] opacity-0"></i></span>' +
+        '<span class="text-[14px] text-[#cdd4bf]">' + esc(o) + '</span>' +
+      '</label>';
+    }).join('') + '</div>';
+    $('qHint').textContent = q.type === 'choice' ? 'выбери один вариант' : 'выбери один или несколько вариантов';
+  }
+  $('qInput').innerHTML = html;
+  refreshIcons();
+
+  const ti = $('qTextInput');
+  if (ti){
+    if (q.type === 'long'){
+      const upd = () => { const c = $('qChars'); if (c) c.textContent = ti.value.trim().length; }; upd();
+      ti.addEventListener('input', upd);
+    }
+    setTimeout(() => ti.focus(), 350);
+  }
+  document.querySelectorAll('#qInput .opt-card input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      if (q.type === 'choice'){
+        document.querySelectorAll('#qInput .opt-card').forEach(l => l.classList.remove('checked'));
+        inp.closest('label').classList.add('checked');
+      } else {
+        inp.closest('label').classList.toggle('checked', inp.checked);
+      }
+    });
+  });
+}
+
+function collectCurrent(){
+  const q = state.role.questions[state.idx];
+  if (q.type === 'text' || q.type === 'long'){
+    state.answers[q.id] = ($('qTextInput') ? $('qTextInput').value.trim() : '');
+  } else if (q.type === 'choice'){
+    const c = document.querySelector('#qInput input:checked');
+    state.answers[q.id] = c ? c.value : '';
+  } else {
+    state.answers[q.id] = Array.from(document.querySelectorAll('#qInput input:checked')).map(i => i.value);
+  }
+}
+
+function validateCurrent(){
+  const q = state.role.questions[state.idx];
+  const v = state.answers[q.id];
+  let ok = true, msg = '';
+  if (q.type === 'text'){ ok = !!v && v.length >= 2; msg = 'Ответь на вопрос, чтобы продолжить'; }
+  else if (q.type === 'long'){ const min = q.min || 24; ok = !!v && v.length >= min; msg = 'Нужно минимум ' + min + ' символов'; }
+  else if (q.type === 'choice'){ ok = !!v; msg = 'Выбери один вариант'; }
+  else { ok = Array.isArray(v) && v.length > 0; msg = 'Выбери хотя бы один вариант'; }
+  if (!ok){
+    toast(msg, false);
+    const c = $('qCard'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake');
+  }
+  return ok;
+}
+
+async function finish(){
+  if (state.busy) return;
+  state.busy = true;
+  $('qNextLabel').textContent = 'ОТПРАВЛЯЕМ...';
+  const sub = {
+    id: Date.now(),
+    ts: Date.now(),
+    dateStr: new Date().toLocaleString('ru-RU'),
+    userId: ME.id, userName: ME.first_name + (ME.last_name ? ' ' + ME.last_name : ''),
+    username: ME.username || '',
+    roleId: state.role.id, roleName: state.role.name, roleColor: state.role.color,
+    answers: state.role.questions.map(q => {
+      const a = state.answers[q.id];
+      return { q: q.text, a: Array.isArray(a) ? a.join(', ') : String(a || '') };
+    }),
+    status: 'new', delivered: false
+  };
+
+  const qaLines = sub.answers.map((x, i) => (i + 1) + '. ' + esc(x.q) + '\n   → ' + esc(x.a)).join('\n\n');
+  const text = '<b>НОВАЯ ЗАЯВКА НА СЕРВЕР</b>\n\n' +
+    'Игрок: ' + esc(sub.userName) + (sub.username ? ' (@' + esc(sub.username) + ')' : '') + '\n' +
+    'ID: <code>' + sub.userId + '</code>\n' +
+    'Вакансия: <b>' + esc(sub.roleName) + '</b>\n' +
+    'Время: ' + esc(sub.dateStr) + '\n\n' + qaLines + '\n\n<i>Полный список заявок — в view.html панели.</i>';
+
+  let ok = false;
+  try { const res = await apiSend(ENV.ADMIN_ID, text); ok = !!(res && res.ok); if (!ok) console.warn('TG:', res); }
+  catch(e){ console.warn(e); }
+  sub.delivered = ok;
+  const subs = load(SKEY, []); subs.unshift(sub); save(SKEY, subs);
+
+  $('qWrap').classList.add('hidden');
+  $('doneWrap').classList.remove('hidden');
+  $('doneText').textContent = ok
+    ? 'Готово! Администратор уже получил твою анкету в Telegram. Обычно мы отвечаем в течение пары дней.'
+    : 'Анкета сохранена, но бот не смог доставить сообщение администратору (проверь токен в admin.html). Попробуй ещё раз позже.';
+  if (tg){ $('doneClose').classList.remove('hidden'); $('doneClose').classList.add('inline-flex'); }
+  $('qNextLabel').textContent = 'ОТПРАВИТЬ';
+  state.busy = false;
+}
+
+/* ---------------- события ---------------- */
+$('qNext').addEventListener('click', () => {
+  collectCurrent();
+  if (!validateCurrent()) return;
+  if (state.idx < state.role.questions.length - 1){ state.idx++; renderProgress(); renderQuestion(); }
+  else finish();
+});
+$('qBack').addEventListener('click', () => {
+  collectCurrent();
+  if (state.idx > 0){ state.idx--; renderProgress(); renderQuestion(); }
+  else closeTest();
+});
+$('tClose').addEventListener('click', closeTest);
+$('doneBack').addEventListener('click', () => { closeTest(); renderRoles(); });
+$('doneClose').addEventListener('click', () => { try{ tg.close(); }catch(e){ closeTest(); } });
+document.addEventListener('keydown', e => {
+  if ($('testOverlay').classList.contains('translate-y-full')) return;
+  if (e.key === 'Enter' && $('qTextInput') && $('qTextInput').tagName === 'INPUT'){ e.preventDefault(); $('qNext').click(); }
+});
+
+renderRoles();
+refreshIcons();
+</script>
+</body>
+</html>

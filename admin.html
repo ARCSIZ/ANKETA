@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<title>CRAFT TEAM — админ-панель</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%236fbf3f'/%3E%3Crect y='5' width='16' height='11' fill='%238a5a2b'/%3E%3C/svg%3E" />
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  .pf  { font-family:'Press Start 2P', monospace; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  body { font-family:'Inter', sans-serif; background:#0c0e0a; color:#e8eadf; }
+  #bg-grid{ background-image:linear-gradient(rgba(127,219,79,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(127,219,79,.05) 1px,transparent 1px); background-size:36px 36px; }
+  #grain{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E"); }
+  .px-panel{ border:2px solid #2c3324; background:#12150d; box-shadow:0 6px 0 rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.03); }
+  .px-card{ border:2px solid #2c3324; background:#141810; box-shadow:0 5px 0 rgba(0,0,0,.5); transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+  .px-card:hover{ border-color:#4a5a38; }
+  .pbtn{ border:2px solid #1e2416; box-shadow:0 4px 0 rgba(0,0,0,.55), inset 0 -3px 0 rgba(0,0,0,.28), inset 0 3px 0 rgba(255,255,255,.16); transition:transform .08s ease, box-shadow .08s ease, filter .15s ease; }
+  .pbtn:hover{ filter:brightness(1.1); }
+  .pbtn:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.55); }
+  .pinput{ background:#0e110a; border:2px solid #2c3324; box-shadow:inset 0 3px 0 rgba(0,0,0,.35); transition:border-color .15s ease, box-shadow .15s ease; }
+  .pinput:focus{ outline:none; border-color:#7fdb4f; box-shadow:inset 0 3px 0 rgba(0,0,0,.35), 0 0 0 3px rgba(127,219,79,.15); }
+  .tsel{ } .tsel[aria-selected="true"]{ border-color:#7fdb4f !important; color:#7fdb4f !important; background:#121a0c !important; }
+  .rise{ animation:rise .45s cubic-bezier(.22,1,.36,1) both; } @keyframes rise{ from{ opacity:0; transform:translateY(16px);} to{ opacity:1; transform:none;} }
+  .toast{ animation:tin .3s cubic-bezier(.22,1,.36,1) both; } @keyframes tin{ from{ opacity:0; transform:translateY(12px);} to{ opacity:1; transform:none;} }
+  @keyframes blink{ 50%{ opacity:0; } } .blink{ animation:blink 1.1s steps(2,start) infinite; }
+  pre.codeblock{ font-family:'JetBrains Mono', monospace; font-size:11px; line-height:1.75; color:#b9c6a8; white-space:pre; overflow-x:auto; }
+  ::selection{ background:#7fdb4f; color:#0c0e0a; }
+  ::-webkit-scrollbar{ width:10px; height:10px; } ::-webkit-scrollbar-thumb{ background:#2c3324; border:2px solid #0c0e0a; }
+</style>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+
+<svg width="0" height="0" class="absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-block" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="0" y="0" width="16" height="5" fill="#6fbf3f"/><rect x="0" y="0" width="16" height="1" fill="#8fe05a"/>
+      <rect x="3" y="4" width="2" height="2" fill="#5ea834"/><rect x="11" y="4" width="2" height="2" fill="#5ea834"/>
+      <rect x="0" y="5" width="16" height="11" fill="#8a5a2b"/>
+      <rect x="2" y="7" width="2" height="2" fill="#6b441e"/><rect x="9" y="9" width="3" height="2" fill="#6b441e"/><rect x="5" y="12" width="2" height="2" fill="#a06a34"/>
+    </g></symbol>
+    <symbol id="i-pick" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="1" y="3" width="3" height="2" fill="#9aa3a7"/><rect x="4" y="2" width="8" height="2" fill="#cfd6da"/><rect x="12" y="3" width="3" height="2" fill="#9aa3a7"/>
+      <rect x="7" y="4" width="2" height="11" fill="#8a5a2b"/><rect x="7" y="4" width="2" height="2" fill="#5d3b18"/>
+    </g></symbol>
+    <symbol id="i-sword" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="7" y="1" width="2" height="2" fill="#e9eef1"/><rect x="6" y="3" width="4" height="7" fill="#cfd6da"/><rect x="7" y="3" width="1" height="7" fill="#f4f8fa"/>
+      <rect x="3" y="10" width="10" height="2" fill="#f6c453"/><rect x="7" y="12" width="2" height="3" fill="#8a5a2b"/>
+    </g></symbol>
+    <symbol id="i-gem" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="6" y="2" width="4" height="1" fill="#bffcff"/><rect x="4" y="3" width="8" height="2" fill="#59e0e6"/><rect x="3" y="5" width="10" height="2" fill="#59e0e6"/>
+      <rect x="4" y="7" width="8" height="2" fill="#3fc4cf"/><rect x="6" y="9" width="4" height="2" fill="#3fc4cf"/><rect x="7" y="11" width="2" height="2" fill="#2fa9b4"/>
+      <rect x="5" y="4" width="2" height="1" fill="#e6feff"/>
+    </g></symbol>
+    <symbol id="i-star" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="7" y="1" width="2" height="14" fill="#e0a93a"/><rect x="1" y="7" width="4" height="2" fill="#e0a93a"/><rect x="11" y="7" width="4" height="2" fill="#e0a93a"/>
+      <rect x="4" y="4" width="2" height="2" fill="#e0a93a"/><rect x="10" y="4" width="2" height="2" fill="#e0a93a"/><rect x="4" y="10" width="2" height="2" fill="#e0a93a"/><rect x="10" y="10" width="2" height="2" fill="#e0a93a"/>
+      <rect x="6" y="6" width="4" height="4" fill="#ffd76a"/>
+    </g></symbol>
+    <symbol id="i-heart" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="2" y="2" width="4" height="2" fill="#f0503c"/><rect x="10" y="2" width="4" height="2" fill="#f0503c"/>
+      <rect x="1" y="4" width="14" height="4" fill="#f0503c"/><rect x="2" y="8" width="12" height="2" fill="#d8453a"/>
+      <rect x="4" y="10" width="8" height="2" fill="#d8453a"/><rect x="6" y="12" width="4" height="2" fill="#c23a2a"/><rect x="3" y="3" width="2" height="2" fill="#ff8f7a"/>
+    </g></symbol>
+    <symbol id="i-book" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect x="3" y="2" width="10" height="12" fill="#5b8fd4"/><rect x="3" y="2" width="2" height="12" fill="#3c6bb0"/>
+      <rect x="6" y="4" width="6" height="1" fill="#dce9f9"/><rect x="6" y="7" width="6" height="1" fill="#dce9f9"/><rect x="6" y="10" width="4" height="1" fill="#dce9f9"/>
+    </g></symbol>
+    <symbol id="i-creeper" viewBox="0 0 16 16"><g shape-rendering="crispEdges">
+      <rect width="16" height="16" fill="#57c93a"/><rect x="2" y="2" width="3" height="3" fill="#74e051"/><rect x="12" y="1" width="3" height="3" fill="#74e051"/>
+      <rect x="3" y="4" width="3" height="4" fill="#12300b"/><rect x="10" y="4" width="3" height="4" fill="#12300b"/>
+      <rect x="6" y="8" width="4" height="2" fill="#12300b"/><rect x="5" y="10" width="6" height="3" fill="#12300b"/><rect x="5" y="13" width="2" height="2" fill="#12300b"/><rect x="9" y="13" width="2" height="2" fill="#12300b"/>
+    </g></symbol>
+  </defs>
+</svg>
+
+<div id="bg-grid" class="fixed inset-0 pointer-events-none"></div>
+<div id="grain" class="fixed inset-0 pointer-events-none opacity-[0.05] mix-blend-overlay z-50"></div>
+
+<!-- ============ гейт доступа ============ -->
+<div id="gate" class="fixed inset-0 z-[90] bg-[#0c0e0a]/95 backdrop-blur-sm flex items-center justify-center px-5">
+  <div class="px-panel p-8 md:p-10 w-full max-w-md rise">
+    <svg class="w-14 h-14 mx-auto"><use href="#i-creeper"/></svg>
+    <h1 class="pf text-[11px] md:text-sm text-center mt-7">ЗОНА <span class="text-[#f0503c]">АДМИНА</span><span class="blink text-[#f6c453]">_</span></h1>
+    <p id="gateInfo" class="mono text-[10px] text-center text-[#98a28c] mt-5 leading-relaxed"></p>
+    <div class="mt-7 flex flex-col gap-3">
+      <label class="mono text-[9px] uppercase tracking-widest text-[#5f6b54]">Admin ID (переменная ADMIN_ID)</label>
+      <input id="gateId" class="pinput px-4 py-3 mono text-[13px]" placeholder="например 123456789" />
+      <label class="mono text-[9px] uppercase tracking-widest text-[#5f6b54] mt-2">Токен бота (BOT_TOKEN)</label>
+      <input id="gateTok" type="password" class="pinput px-4 py-3 mono text-[13px]" placeholder="123456:AA..." />
+      <button id="gateBtn" class="pbtn mt-4 px-6 py-3.5 bg-[#7fdb4f] text-[#0c0e0a] pf text-[10px]">ВОЙТИ В ПАНЕЛЬ</button>
+      <p class="mono text-[9px] text-[#5f6b54] text-center mt-2">при первом входе введённый ID и токен сохранятся в localStorage этого домена</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ шапка ============ -->
+<header class="relative z-10 max-w-6xl mx-auto px-5 pt-6 flex items-center justify-between gap-4">
+  <a href="index.html" class="flex items-center gap-3">
+    <span class="pbtn inline-flex items-center justify-center w-10 h-10 bg-[#1a2012]"><svg class="w-6 h-6"><use href="#i-block"/></svg></span>
+    <span class="pf text-[10px] md:text-xs leading-relaxed">CRAFT<br><span class="text-[#7fdb4f]">TEAM</span></span>
+  </a>
+  <nav class="flex items-center gap-2">
+    <a href="index.html" class="mono text-[10px] uppercase tracking-widest px-3 py-2 border-2 border-[#2c3324] text-[#98a28c] bg-[#12150d] hover:text-[#e8eadf] hover:border-[#4a5a38] transition-colors">Анкета</a>
+    <a href="view.html" class="mono text-[10px] uppercase tracking-widest px-3 py-2 border-2 border-[#2c3324] text-[#98a28c] bg-[#12150d] hover:text-[#e8eadf] hover:border-[#4a5a38] transition-colors">Заявки</a>
+    <span class="mono text-[10px] uppercase tracking-widest px-3 py-2 border-2 border-[#2c3324] text-[#7fdb4f] bg-[#12150d]">Админка</span>
+  </nav>
+</header>
+
+<main id="app" class="relative z-10 max-w-6xl mx-auto px-5 pb-24 opacity-0 pointer-events-none transition-opacity duration-500">
+  <div class="pt-10 md:pt-14 flex flex-wrap items-end justify-between gap-5">
+    <div>
+      <p class="mono text-[10px] uppercase tracking-[0.35em] text-[#98a28c] mb-3">// панель администратора</p>
+      <h1 class="pf text-sm md:text-xl leading-relaxed">РЕДАКТОР <span class="text-[#7fdb4f]">НАБОРА</span></h1>
+    </div>
+    <div class="flex gap-2.5">
+      <button id="tabRoles" class="tsel mono text-[10px] uppercase tracking-widest px-4 py-2.5 border-2 border-[#2c3324] text-[#98a28c] bg-[#12150d]" aria-selected="true">Вакансии</button>
+      <button id="tabBot" class="tsel mono text-[10px] uppercase tracking-widest px-4 py-2.5 border-2 border-[#2c3324] text-[#98a28c] bg-[#12150d]" aria-selected="false">Бот и данные</button>
+    </div>
+  </div>
+
+  <!-- статистика -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-9" id="stats"></div>
+
+  <!-- ============ вкладка: вакансии ============ -->
+  <section id="paneRoles" class="mt-10 grid lg:grid-cols-[300px_1fr] gap-6 items-start">
+    <div class="flex flex-col gap-4">
+      <button id="newRole" class="pbtn w-full px-5 py-4 bg-[#7fdb4f] text-[#0c0e0a] pf text-[9px] inline-flex items-center justify-center gap-2">
+        <i data-lucide="plus" class="w-4 h-4"></i> НОВАЯ ВАКАНСИЯ
+      </button>
+      <div id="rolesList" class="flex flex-col gap-3"></div>
+    </div>
+
+    <div id="editorEmpty" class="px-panel p-10 text-center">
+      <svg class="w-12 h-12 mx-auto opacity-50"><use href="#i-book"/></svg>
+      <p class="mono text-[11px] text-[#98a28c] mt-5">выбери вакансию слева или создай новую,<br>чтобы редактировать описание и вопросы</p>
+    </div>
+
+    <div id="editor" class="hidden px-panel p-6 md:p-8">
+      <div class="flex items-center justify-between gap-4 mb-7">
+        <h2 class="pf text-[10px] md:text-xs" id="edTitle">НОВАЯ ВАКАНСИЯ</h2>
+        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+          <span class="mono text-[9px] uppercase tracking-widest text-[#98a28c]">набор открыт</span>
+          <input type="checkbox" id="edOpen" class="accent-[#7fdb4f] w-4 h-4" checked />
+        </label>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="mono text-[9px] uppercase tracking-widest text-[#5f6b54] block mb-2">Название</label>
+          <input id="edName" class="pinput w-full px-4 py-3 text-[14px]" placeholder="Хелпер" maxlength="40" />
+        </div>
+        <div>
+          <label class="mono text-[9px] uppercase tracking-widest text-[#5f6b54] block mb-2">Цвет</label>
+          <div id="edColors" class="flex flex-wrap gap-2 pt-1"></div>
+        </div>
+      </div>
+      <div class="mt-4">
+        <label class="mono text-[9px] uppercase tracking-widest text-[#5f6b54] block mb-2">Описание вакансии</label>
+        <textarea id="edDesc" rows="2" maxlength="220" class="pinput w-full px-4 py-3 text-[14px] leading-relaxed resize-none" placeholder="Пара предложений о роли..."></textarea>
+      </div>
+      <div class="mt-4">
+        <label class="mono text-[9px] uppercase tracking-widest text-[#5f6b54] block mb-2">Иконка</label>
+        <div id="edIcons" class="flex flex-wrap gap-2.5"></div>
+      </div>
+
+      <div class="mt-8 pt-6 border-t-2 border-[#2c3324]">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="pf text-[9px] text-[#98a28c]">ВОПРОСЫ ТЕСТА <span id="qCount" class="text-[#5f6b54]"></span></h3>
+          <button id="addQ" class="pbtn px-4 py-2.5 bg-[#1a2012] text-[#7fdb4f] mono text-[10px] uppercase tracking-widest inline-flex items-center gap-2">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> вопрос
+          </button>
+        </div>
+        <div id="qList" class="flex flex-col gap-4"></div>
+      </div>
+
+      <div class="flex flex-wrap gap-4 mt-8 pt-6 border-t-2 border-[#2c3324]">
+        <button id="saveRole" class="pbtn px-7 py-4 bg-[#7fdb4f] text-[#0c0e0a] pf text-[9px] inline-flex items-center gap-2">
+          <i data-lucide="save" class="w-4 h-4"></i> СОХРАНИТЬ
+        </button>
+        <button id="delRole" class="pbtn px-6 py-4 bg-[#2a1210] !border-[#5a1f1a] text-[#f0503c] mono text-[10px] uppercase tracking-widest inline-flex items-center gap-2">
+          <i data-lucide="trash-2" class="w-4 h-4"></i> удалить
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ вкладка: бот ============ -->
+  <section id="paneBot" class="mt-10 hidden grid lg:grid-cols-2 gap-6 items-start">
+    <div class="flex flex-col gap-6">
+      <div class="px-panel p-6 md:p-7">
+        <h2 class="pf text-[10px] mb-6 text-[#59e0e6]">ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ</h2>
+        <label class="mono text-[9px] uppercase tracking-widest text-[#5f6b54] block mb-2">ADMIN_ID — твой Telegram ID</label>
+        <input id="envId" class="pinput w-full px-4 py-3 mono text-[13px]" />
+        <label class="mono text-[9px] uppercase tracking-widest text-[#5f6b54] block mb-2 mt-5">BOT_TOKEN — токен от @BotFather</label>
+        <div class="flex gap-2.5">
+          <input id="envTok" type="password" class="pinput w-full px-4 py-3 mono text-[13px]" />
+          <button id="tokShow" class="pbtn w-12 shrink-0 inline-flex items-center justify-center bg-[#1a2012] text-[#98a28c]"><i data-lucide="eye" class="w-4 h-4"></i></button>
+        </div>
+        <div class="flex flex-wrap gap-3 mt-6">
+          <button id="envSave" class="pbtn px-6 py-3.5 bg-[#7fdb4f] text-[#0c0e0a] pf text-[9px]">СОХРАНИТЬ</button>
+          <button id="envTest" class="pbtn px-5 py-3.5 bg-[#1a2012] text-[#59e0e6] mono text-[10px] uppercase tracking-widest inline-flex items-center gap-2">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i> тестовое сообщение мне
+          </button>
+        </div>
+        <p class="mono text-[9px] text-[#5f6b54] leading-relaxed mt-5">
+          Значения пишутся в localStorage домена и читаются всеми тремя страницами как «переменные окружения». При деплое на Netlify/Vercel их же можно инжектировать в window.__ENV__ сборкой. Токен виден в исходниках страницы — для продакшена лучше поднять маленький серверный прокси.
+        </p>
+      </div>
+
+      <div class="px-panel p-6 md:p-7">
+        <h2 class="pf text-[10px] mb-6 text-[#f6c453]">ДАННЫЕ</h2>
+        <div class="flex flex-wrap gap-3">
+          <button id="expJson" class="pbtn px-5 py-3 bg-[#1a2012] text-[#98a28c] mono text-[10px] uppercase tracking-widest inline-flex items-center gap-2"><i data-lucide="file-json" class="w-3.5 h-3.5"></i> экспорт JSON</button>
+          <button id="seedBtn" class="pbtn px-5 py-3 bg-[#1a2012] text-[#98a28c] mono text-[10px] uppercase tracking-widest inline-flex items-center gap-2"><i data-lucide="refresh-ccw" class="w-3.5 h-3.5"></i> сбросить вакансии</button>
+          <button id="clearSubs" class="pbtn px-5 py-3 bg-[#2a1210] !border-[#5a1f1a] text-[#f0503c] mono text-[10px] uppercase tracking-widest inline-flex items-center gap-2"><i data-lucide="eraser" class="w-3.5 h-3.5"></i> очистить заявки</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-panel p-6 md:p-7">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="pf text-[10px] text-[#7fdb4f]">КОД БОТА (BOT.PY · PYTHON 3)</h2>
+        <button id="copyBot" class="pbtn px-4 py-2 bg-[#1a2012] text-[#98a28c] mono text-[9px] uppercase tracking-widest inline-flex items-center gap-2"><i data-lucide="copy" class="w-3.5 h-3.5"></i> копировать</button>
+      </div>
+      <pre class="codeblock px-panel !bg-[#0e110a] p-5 !shadow-none" id="botCode"></pre>
+      <ol class="mt-6 flex flex-col gap-3 text-[13px] text-[#98a28c] leading-relaxed list-decimal list-inside">
+        <li><span class="text-[#e8eadf]">@BotFather</span> → /newbot → забери токен и впиши его слева.</li>
+        <li>Кнопку меню мини-аппа задай через <span class="mono text-[11px] text-[#e8eadf]">/setmenubutton</span> в BotFather или методом <span class="mono text-[11px] text-[#e8eadf]">setChatMenuButton</span>, ссылка — на index.html.</li>
+        <li>Запусти: <span class="mono text-[11px] text-[#e8eadf]">pip install -r requirements.txt</span>, затем <span class="mono text-[11px] text-[#e8eadf]">python bot.py</span> (читает BOT_TOKEN и WEBAPP_URL из .env)</li>
+        <li>Бот сам поприветствует игрока на /start, даст ссылку на мини-апп, а анкеты и статусы уже летят через Bot API прямо с этих страниц.</li>
+      </ol>
+    </div>
+  </section>
+</main>
+
+<div id="toasts" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[95] flex flex-col items-center gap-2 pointer-events-none w-[92vw] max-w-md"></div>
+
+<script>
+/* ============ ENV ============ */
+const FALLBACK_ENV = { ADMIN_ID: "0", BOT_TOKEN: "PASTE_BOT_TOKEN" };
+function getEnv(){
+  let ls = {}; try { ls = JSON.parse(localStorage.getItem('mc_env') || '{}'); } catch(e){}
+  return {
+    ADMIN_ID:  (window.__ENV__ && window.__ENV__.ADMIN_ID)  || ls.ADMIN_ID  || FALLBACK_ENV.ADMIN_ID,
+    BOT_TOKEN: (window.__ENV__ && window.__ENV__.BOT_TOKEN) || ls.BOT_TOKEN || FALLBACK_ENV.BOT_TOKEN
+  };
+}
+let ENV = getEnv();
+const saveEnv = () => localStorage.setItem('mc_env', JSON.stringify(ENV));
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+try { if (tg){ tg.ready(); tg.expand(); tg.setHeaderColor('#0c0e0a'); tg.setBackgroundColor('#0c0e0a'); } } catch(e){}
+const TG_USER = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
+
+async function apiSend(chatId, text){
+  const r = await fetch('https://api.telegram.org/bot' + ENV.BOT_TOKEN + '/sendMessage', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode:'HTML' })
+  });
+  return r.json();
+}
+
+/* ============ хранилище ============ */
+const RKEY = 'mc_roles_v1', SKEY = 'mc_subs_v1';
+const load = (k,d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch(e){ return d; } };
+const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+let roles = load(RKEY, null) || [];
+let editingId = null, qWork = [];
+
+const $ = id => document.getElementById(id);
+const refreshIcons = () => { try{ lucide.createIcons(); }catch(e){} };
+function toast(msg, ok = true){
+  const t = document.createElement('div');
+  t.className = 'toast px-panel pointer-events-auto px-4 py-3 flex items-center gap-2.5' + (ok ? '' : ' !border-[#f0503c]');
+  t.innerHTML = '<span class="mono text-[11px] leading-snug text-[#e8eadf]">' + esc(msg) + '</span>';
+  $('toasts').appendChild(t);
+  setTimeout(() => { t.style.transition = 'opacity .4s'; t.style.opacity = 0; setTimeout(() => t.remove(), 420); }, 3200);
+}
+
+const COLORS = ['#7fdb4f','#3ddc84','#59e0e6','#f6c453','#f69b3c','#f0503c','#b48cf2','#f27ec2'];
+const ICONS  = ['i-pick','i-sword','i-block','i-gem','i-star','i-heart','i-book','i-creeper'];
+const QTYPES = { text:'Короткий ответ', long:'Развёрнутый ответ', choice:'Один вариант', multi:'Несколько вариантов' };
+
+/* ============ гейт ============ */
+function unlock(){
+  $('gate').style.display = 'none';
+  $('app').classList.remove('opacity-0','pointer-events-none');
+  init();
+}
+function gateInfoMsg(){
+  const via = TG_USER ? 'Ты вошёл как id ' + TG_USER.id + '.' : 'Открыто вне Telegram — нужен ручной вход.';
+  const st = ENV.ADMIN_ID === '0' ? ' ADMIN_ID пока не задан: первый введённый станет админом.' : '';
+  $('gateInfo').textContent = via + st;
+}
+$('gateBtn').addEventListener('click', () => {
+  const idIn = $('gateId').value.trim(), tokIn = $('gateTok').value.trim();
+  if (ENV.ADMIN_ID !== '0'){
+    const ok = (TG_USER && String(TG_USER.id) === String(ENV.ADMIN_ID)) || (idIn && idIn === String(ENV.ADMIN_ID));
+    if (!ok){ toast('Неверный Admin ID. Доступ запрещён.', false); return; }
+    if (tokIn && tokIn !== ENV.BOT_TOKEN){ ENV.BOT_TOKEN = tokIn; saveEnv(); }
+    unlock();
+  } else {
+    if (!idIn || !/^[0-9]{4,}$/.test(idIn)){ toast('Введи свой числовой Telegram ID (узнай у @userinfobot).', false); return; }
+    ENV.ADMIN_ID = idIn;
+    if (tokIn) ENV.BOT_TOKEN = tokIn;
+    saveEnv(); unlock();
+    toast('ADMIN_ID сохранён. Теперь только ты открываешь панель.');
+  }
+});
+(function gateBoot(){
+  const key = new URLSearchParams(location.search).get('key');
+  if (ENV.ADMIN_ID !== '0' && (
+      (TG_USER && String(TG_USER.id) === String(ENV.ADMIN_ID)) ||
+      (key && key === String(ENV.ADMIN_ID)))){ unlock(); return; }
+  gateInfoMsg();
+})();
+
+/* ============ вкладки ============ */
+function setTab(bot){
+  $('paneRoles').classList.toggle('hidden', bot);
+  $('paneBot').classList.toggle('hidden', !bot);
+  $('tabRoles').setAttribute('aria-selected', String(!bot));
+  $('tabBot').setAttribute('aria-selected', String(bot));
+}
+$('tabRoles').addEventListener('click', () => setTab(false));
+$('tabBot').addEventListener('click', () => setTab(true));
+
+/* ============ статистика ============ */
+function renderStats(){
+  const subs = load(SKEY, []);
+  const news = subs.filter(s => s.status === 'new').length;
+  const qs = roles.reduce((a, r) => a + r.questions.length, 0);
+  const data = [
+    ['Вакансии', roles.length, '#7fdb4f', 'briefcase'],
+    ['Вопросов всего', qs, '#59e0e6', 'list-checks'],
+    ['Заявок', subs.length, '#f6c453', 'users'],
+    ['Новых заявок', news, '#f0503c', 'bell-ring']
+  ];
+  $('stats').innerHTML = data.map(([l, v, c, i]) =>
+    '<div class="px-card p-5"><div class="flex items-center justify-between">' +
+    '<span class="inline-flex items-center justify-center w-9 h-9 border-2" style="border-color:' + c + '44;color:' + c + '"><i data-lucide="' + i + '" class="w-4 h-4"></i></span>' +
+    '<span class="pf text-base" style="color:' + c + '">' + v + '</span></div>' +
+    '<p class="mono text-[9px] uppercase tracking-widest text-[#5f6b54] mt-4">' + l + '</p></div>'
+  ).join('');
+  refreshIcons();
+}
+
+/* ============ список вакансий ============ */
+function renderRolesList(){
+  if (!roles.length){ $('rolesList').innerHTML = '<p class="mono text-[10px] text-[#5f6b54] p-4">пусто. создай первую вакансию</p>'; return; }
+  $('rolesList').innerHTML = roles.map(r =>
+    '<div class="px-card p-4 flex items-center gap-3 ' + (editingId === r.id ? '!border-[#7fdb4f]' : '') + '">' +
+      '<button class="flex items-center gap-3 flex-1 text-left min-w-0" data-edit="' + r.id + '">' +
+        '<span class="w-9 h-9 shrink-0 inline-flex items-center justify-center border-2" style="border-color:' + r.color + '55;background:' + r.color + '18"><svg class="w-6 h-6"><use href="#' + r.icon + '"/></svg></span>' +
+        '<span class="min-w-0"><span class="block text-[13px] font-medium truncate" style="color:' + r.color + '">' + esc(r.name) + '</span>' +
+        '<span class="block mono text-[9px] text-[#5f6b54] mt-1">' + r.questions.length + ' вопр. · ' + (r.open ? 'набор открыт' : 'закрыт') + '</span></span>' +
+      '</button>' +
+      '<button class="pbtn w-8 h-8 shrink-0 inline-flex items-center justify-center bg-[#1a2012] ' + (r.open ? 'text-[#7fdb4f]' : 'text-[#5f6b54]') + '" data-toggle="' + r.id + '" title="открыть/закрыть набор"><i data-lucide="' + (r.open ? 'unlock' : 'lock') + '" class="w-3.5 h-3.5"></i></button>' +
+    '</div>'
+  ).join('');
+  refreshIcons();
+  document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEditor(b.dataset.edit)));
+  document.querySelectorAll('[data-toggle]').forEach(b => b.addEventListener('click', () => {
+    const r = roles.find(x => x.id === b.dataset.toggle); r.open = !r.open;
+    save(RKEY, roles); renderRolesList(); renderStats();
+    toast(r.name + ': набор ' + (r.open ? 'открыт' : 'закрыт') + '.');
+  }));
+}
+
+/* ============ редактор ============ */
+let edColor = COLORS[0], edIcon = ICONS[0];
+function openEditor(id){
+  const r = roles.find(x => x.id === id) || null;
+  editingId = r ? r.id : 'new:' + Date.now();
+  qWork = r ? JSON.parse(JSON.stringify(r.questions)) : [{ id:'q1', type:'text', text:'' }];
+  $('editorEmpty').classList.add('hidden'); $('editor').classList.remove('hidden');
+  $('edTitle').textContent = r ? ('РЕДАКТИРОВАНИЕ: ' + r.name.toUpperCase()) : 'НОВАЯ ВАКАНСИЯ';
+  $('edName').value = r ? r.name : '';
+  $('edDesc').value = r ? r.desc : '';
+  $('edOpen').checked = r ? !!r.open : true;
+  edColor = r ? r.color : COLORS[0];
+  edIcon  = r ? r.icon : ICONS[0];
+  $('delRole').style.display = r ? 'inline-flex' : 'none';
+  renderSwatches(); renderQList();
+  $('editor').classList.remove('rise'); void $('editor').offsetWidth; $('editor').classList.add('rise');
+}
+function renderSwatches(){
+  $('edColors').innerHTML = COLORS.map(c =>
+    '<button class="w-8 h-8 border-2 pbtn" style="background:' + c + '; border-color:' + (c === edColor ? '#fff' : '#1e2416') + '" data-col="' + c + '" title="' + c + '"></button>').join('');
+  $('edIcons').innerHTML = ICONS.map(ic =>
+    '<button class="pbtn w-11 h-11 inline-flex items-center justify-center bg-[#1a2012]" style="border-color:' + (ic === edIcon ? edColor : '#1e2416') + '" data-ic="' + ic + '"><svg class="w-7 h-7"><use href="#' + ic + '"/></svg></button>').join('');
+  document.querySelectorAll('[data-col]').forEach(b => b.addEventListener('click', () => { edColor = b.dataset.col; renderSwatches(); }));
+  document.querySelectorAll('[data-ic]').forEach(b => b.addEventListener('click', () => { edIcon = b.dataset.ic; renderSwatches(); }));
+}
+function renderQList(){
+  $('qCount').textContent = '(' + qWork.length + ')';
+  $('qList').innerHTML = qWork.map((q, i) =>
+    '<div class="px-card p-4" data-q="' + i + '">' +
+      '<div class="flex items-center gap-2.5 mb-3">' +
+        '<span class="mono text-[9px] text-[#5f6b54]">#' + (i + 1) + '</span>' +
+        '<select class="pinput px-2.5 py-1.5 mono text-[11px] ml-auto" data-f="type">' +
+          Object.entries(QTYPES).map(([v, l]) => '<option value="' + v + '" ' + (q.type === v ? 'selected' : '') + '>' + l + '</option>').join('') +
+        '</select>' +
+        '<button class="pbtn w-8 h-8 inline-flex items-center justify-center bg-[#1a2012] text-[#98a28c]" data-a="up"><i data-lucide="chevron-up" class="w-3.5 h-3.5"></i></button>' +
+        '<button class="pbtn w-8 h-8 inline-flex items-center justify-center bg-[#1a2012] text-[#98a28c]" data-a="down"><i data-lucide="chevron-down" class="w-3.5 h-3.5"></i></button>' +
+        '<button class="pbtn w-8 h-8 inline-flex items-center justify-center bg-[#2a1210] text-[#f0503c]" data-a="del"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>' +
+      '</div>' +
+      '<input class="pinput w-full px-4 py-3 text-[13px]" data-f="text" placeholder="Текст вопроса..." value="' + esc(q.text) + '" />' +
+      ((q.type === 'choice' || q.type === 'multi')
+        ? '<textarea rows="3" class="pinput w-full px-4 py-3 mt-3 mono text-[11px] resize-none" data-f="options" placeholder="Каждый вариант с новой строки">' + esc((q.options || []).join('\n')) + '</textarea>'
+        : '') +
+      (q.type === 'long'
+        ? '<label class="mono text-[9px] text-[#5f6b54] mt-3 flex items-center gap-2">мин. символов <input class="pinput w-16 px-2 py-1 mono text-[11px]" data-f="min" value="' + (q.min || 24) + '" /></label>'
+        : '') +
+    '</div>'
+  ).join('');
+  refreshIcons();
+  document.querySelectorAll('#qList [data-q]').forEach(card => {
+    const i = +card.dataset.q;
+    card.querySelectorAll('[data-f]').forEach(inp => inp.addEventListener('change', () => {
+      const f = inp.dataset.f;
+      if (f === 'options') qWork[i].options = inp.value.split('\n').map(s => s.trim()).filter(Boolean);
+      else if (f === 'min') qWork[i].min = Math.max(1, +inp.value || 24);
+      else if (f === 'type'){
+        qWork[i].type = inp.value;
+        if ((inp.value === 'choice' || inp.value === 'multi') && !qWork[i].options) qWork[i].options = ['Вариант 1','Вариант 2'];
+        renderQList();
+      }
+      else qWork[i][f] = inp.value;
+    }));
+    card.querySelectorAll('[data-a]').forEach(btn => btn.addEventListener('click', () => {
+      const a = btn.dataset.a;
+      if (a === 'del'){ if (qWork.length === 1){ toast('Нужен хотя бы один вопрос.', false); return; } qWork.splice(i, 1); }
+      if (a === 'up' && i > 0){ [qWork[i-1], qWork[i]] = [qWork[i], qWork[i-1]]; }
+      if (a === 'down' && i < qWork.length - 1){ [qWork[i+1], qWork[i]] = [qWork[i], qWork[i+1]]; }
+      renderQList();
+    }));
+  });
+}
+$('newRole').addEventListener('click', () => openEditor(null));
+$('addQ').addEventListener('click', () => { qWork.push({ id:'q' + Date.now(), type:'text', text:'' }); renderQList(); });
+
+$('saveRole').addEventListener('click', () => {
+  const name = $('edName').value.trim();
+  if (!name){ toast('Дай вакансии название.', false); return; }
+  qWork.forEach(q => { const inp = document.querySelector('[data-q="' + qWork.indexOf(q) + '"] [data-f="text"]'); if (inp) q.text = inp.value.trim(); });
+  if (qWork.some(q => !q.text)){ toast('Есть вопросы без текста.', false); return; }
+  const obj = {
+    id: String(editingId).startsWith('new:') ? 'r' + Date.now() : editingId,
+    name, desc: $('edDesc').value.trim(), color: edColor, icon: edIcon,
+    open: $('edOpen').checked, questions: qWork.map((q, i) => ({ ...q, id: 'q' + (i + 1) }))
+  };
+  const idx = roles.findIndex(r => r.id === obj.id);
+  if (idx >= 0) roles[idx] = obj; else roles.push(obj);
+  save(RKEY, roles);
+  renderRolesList(); renderStats();
+  toast('Вакансия «' + name + '» сохранена.');
+});
+$('delRole').addEventListener('click', () => {
+  if (!confirm('Удалить вакансию вместе с вопросами?')) return;
+  roles = roles.filter(r => r.id !== editingId);
+  save(RKEY, roles); editingId = null;
+  $('editor').classList.add('hidden'); $('editorEmpty').classList.remove('hidden');
+  renderRolesList(); renderStats(); toast('Вакансия удалена.');
+});
+
+/* ============ бот ============ */
+const BOT_SNIPPET = `# bot.py — приветствие + кнопка мини-аппа (aiogram 3, Python 3.11+)
+# весь этот код уже лежит в файле bot.py проекта
+import asyncio
+import os
+from dotenv import load_dotenv
+from aiogram import Bot, Dispatcher
+from aiogram.filters import CommandStart
+from aiogram.types import (
+    Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo,
+)
+
+load_dotenv()
+
+BOT_TOKEN  = os.getenv("BOT_TOKEN", "")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https://your-domain/")
+
+bot = Bot(BOT_TOKEN)
+dp  = Dispatcher()
+
+@dp.message(CommandStart())
+async def start(m: Message):
+    kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(
+            text="Открыть анкету",
+            web_app=WebAppInfo(url=WEBAPP_URL),
+        )
+    ]])
+    await m.answer(
+        f"Привет, {m.from_user.first_name or 'игрок'}!\\n"
+        "Это набор в команду майнкрафт-сервера.\\n"
+        "Жми кнопку ниже: выбери вакансию и пройди тест —\\n"
+        "результат сразу прилетит администратору.",
+        reply_markup=kb,
+    )
+
+async def main():
+    await bot.delete_webhook(drop_pending_updates=True)
+    print("Craft Team bot запущен (polling)")
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())`;
+
+function initBotPane(){
+  $('envId').value = ENV.ADMIN_ID === '0' ? '' : ENV.ADMIN_ID;
+  $('envTok').value = ENV.BOT_TOKEN === 'PASTE_BOT_TOKEN' ? '' : ENV.BOT_TOKEN;
+  $('botCode').textContent = BOT_SNIPPET;
+}
+$('tokShow').addEventListener('click', () => {
+  const t = $('envTok'); t.type = t.type === 'password' ? 'text' : 'password';
+});
+$('envSave').addEventListener('click', () => {
+  const id = $('envId').value.trim(), tok = $('envTok').value.trim();
+  if (!id || !/^[0-9]{4,}$/.test(id)){ toast('Admin ID должен быть числовым (узнай у @userinfobot).', false); return; }
+  if (!tok || tok.indexOf(':') < 0){ toast('Токен обычно вида 123456:ABC...', false); return; }
+  ENV = { ADMIN_ID: id, BOT_TOKEN: tok }; saveEnv();
+  toast('ENV сохранены: ADMIN_ID и BOT_TOKEN.');
+});
+$('envTest').addEventListener('click', async () => {
+  try {
+    const res = await apiSend(ENV.ADMIN_ID, '<b>CRAFT TEAM</b>\nТестовое сообщение: связь бота с панелью работает.');
+    if (res && res.ok) toast('Проверь ЛС — сообщение доставлено.');
+    else toast('Ошибка Bot API: ' + (res && res.description ? res.description : 'неизвестно'), false);
+  } catch(e){ toast('Сеть недоступна: ' + e.message, false); }
+});
+$('copyBot').addEventListener('click', () => {
+  navigator.clipboard.writeText(BOT_SNIPPET).then(() => toast('Код бота скопирован.'));
+});
+$('expJson').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify({ roles, subs: load(SKEY, []) }, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'craft-team-backup.json'; a.click();
+  toast('Бэкап скачан.');
+});
+$('seedBtn').addEventListener('click', () => {
+  if (!confirm('Вернуть стандартные 4 вакансии? Твои правки сотрутся.')) return;
+  localStorage.removeItem(RKEY); location.reload();
+});
+$('clearSubs').addEventListener('click', () => {
+  if (!confirm('Удалить ВСЕ заявки безвозвратно?')) return;
+  save(SKEY, []); renderStats(); toast('Заявки очищены.');
+});
+
+function init(){
+  renderStats(); renderRolesList(); initBotPane(); refreshIcons();
+}
+refreshIcons();
+</script>
+</body>
+</html>
